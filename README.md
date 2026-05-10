@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SiteOps Radar
 
-## Getting Started
+AI-powered website intelligence for performance, SEO, security, accessibility, and AEO/GEO readiness.
 
-First, run the development server:
+## Quick start
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Environment
+
+Copy `.env.example` and set only the integrations you need:
+
+```bash
+DATABASE_URL=""
+PAGESPEED_API_KEY=""
+LLM_API_KEY=""
+LLM_MODEL="gpt-4.1-mini"
+LLM_BASE_URL="https://api.openai.com/v1"
+LLM_TEMPERATURE="0.2"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+Notes:
+
+- `DATABASE_URL` enables Prisma persistence for analysis runs.
+- `PAGESPEED_API_KEY` enables live PageSpeed Insights data.
+- `LLM_*` uses an OpenAI-compatible chat completions endpoint for localized AI summaries. If no LLM key is configured, the app falls back to a deterministic local summary adapter.
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run lint
+npm run typecheck
+npm run test
+npm run e2e
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Current Phase 3 progress
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- LLM adapter for AI summaries
+- Locale-specific Korean and English summaries
+- Competitor gap narrative in the dashboard
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Stack
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 15 App Router
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- next-intl
+- Prisma + PostgreSQL
+- Vitest + Playwright

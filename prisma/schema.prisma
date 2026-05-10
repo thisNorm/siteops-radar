@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AnalysisStatus {
+  queued
+  running
+  succeeded
+  failed
+  partial
+}
+
+enum Severity {
+  info
+  low
+  medium
+  high
+  critical
+}
+
+enum RecommendationCategory {
+  performance
+  seo
+  aeogeo
+  security
+  accessibility
+  contentQuality
+  technicalHealth
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      Project[]
+  e2eTestRuns   E2eTestRun[]
+
+  @@map("users")
+}
+
+model Project {
+  id              String             @id @default(cuid())
+  userId          String
+  name            String
+  sourceUrl       String
+  normalizedUrl   String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competitors     CompetitorSite[]
+  analysisResults AnalysisResult[]
+  history         AnalysisHistory[]
+
+  @@unique([userId, normalizedUrl])
+  @@index([userId, updatedAt])
+  @@map("projects")
+}
+
+model CompetitorSite {
+  id              String           @id @default(cuid())
+  projectId       String
+  name            String
+  sourceUrl       String
+  normalizedUrl   String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysisResults AnalysisResult[]
+
+  @@unique([projectId, normalizedUrl])
+  @@map("competitor_sites")
+}
+
+model AnalysisResult {
+  id                    String                      @id @default(cuid())
+  projectId             String
+  competitorSiteId      String?
+  status                AnalysisStatus              @default(queued)
+  sourceUrl             String
+  finalUrl              String?
+  httpStatus            Int?
+  durationMs            Int?
+  analyzerVersion       String                      @default("mvp-1")
+  pagespeedStrategy     String                      @default("mobile")
+  externalRequestCount  Int                         @default(0)
+  externalCostEstimate  Decimal                     @default(0)
+  cacheKey              String?
+  cacheExpiresAt        DateTime?
+  scores                Json
+  findings              Json
+  recommendations       Json
+  rawSnapshot           Json
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  errorCode             String?
+  errorMessage          String?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  project               Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  competitorSite        CompetitorSite?             @relation(fields: [competitorSiteId], references: [id], onDelete: SetNull)
+  analysisScores        AnalysisScore[]
+  securityFindings      SecurityFinding[]
+  seoFindings           SeoFinding[]
+  aeogeoFindings        AeoGeoFinding[]
+  recommendationsList   ImprovementRecommendation[]
+  aiSummaries           AiSummary[]
+  history               AnalysisHistory[]
+
+  @@index([projectId, createdAt])
+  @@index([status, createdAt])
+  @@map("analysis_results")
+}
+
+model AnalysisScore {
+  id               String         @id @default(cuid())
+  analysisResultId String
+  category         RecommendationCategory
+  score            Int
+  details          Json?
+  createdAt        DateTime       @default(now())
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisResultId, category])
+  @@map("analysis_scores")
+}
+
+model SecurityFinding {
+  id               String         @id @default(cuid())
+  analysisResultId String
+  severity         Severity
+  title            String
+  description      String
+  evidence         Json?
+  createdAt        DateTime       @default(now())
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([severity])
+  @@map("security_findings")
+}
+
+model SeoFinding {
+  id               String         @id @default(cuid())
+  analysisResultId String
+  severity         Severity
+  title            String
+  description      String
+  evidence         Json?
+  createdAt        DateTime       @default(now())
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([severity])
+  @@map("seo_findings")
+}
+
+model AeoGeoFinding {
+  id               String         @id @default(cuid())
+  analysisResultId String
+  severity         Severity
+  title            String
+  description      String
+  evidence         Json?
+  createdAt        DateTime       @default(now())
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([severity])
+  @@map("aeogeo_findings")
+}
+
+model ImprovementRecommendation {
+  id                 String                 @id @default(cuid())
+  analysisResultId   String
+  category           RecommendationCategory
+  severity           Severity
+  title              String
+  description        String
+  impact             Int
+  effort             Int
+  competitorGap      Int
+  priorityScore      Float
+  expectedImprovement String?
+  createdAt          DateTime               @default(now())
+  analysisResult     AnalysisResult         @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([priorityScore])
+  @@map("improvement_recommendations")
+}
+
+model AiSummary {
+  id               String         @id @default(cuid())
+  analysisResultId String
+  locale           String
+  summary          String
+  keyRisks         Json
+  nextActions      Json
+  model            String         @default("heuristic-mvp")
+  createdAt        DateTime       @default(now())
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([locale])
+  @@map("ai_summaries")
+}
+
+model AnalysisHistory {
+  id               String         @id @default(cuid())
+  projectId        String
+  analysisResultId String
+  overallScore     Int
+  delta            Int?
+  createdAt        DateTime       @default(now())
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("analysis_history")
+}
+
+model E2eTestRun {
+  id        String   @id @default(cuid())
+  userId    String?
+  status    String
+  metadata  Json?
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("e2e_test_runs")
+}

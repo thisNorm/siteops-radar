@@ -1,0 +1,82 @@
+{
+  "app": {
+    "name": "SiteOps Radar",
+    "tagline": "AI-powered website intelligence",
+    "description": "Analyze performance, SEO, security, accessibility, and AI search readiness in one place."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "competitors": "Competitors",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "actions": {
+    "analyze": "Run analysis",
+    "addSite": "Add site",
+    "addCompetitor": "Add competitor",
+    "viewDetails": "View details",
+    "save": "Save",
+    "remove": "Remove",
+    "select": "Select"
+  },
+  "projects": {
+    "title": "Manage projects and competitors",
+    "subtitle": "Register your site and competitor sites so analysis results can be compared with the same scoring model.",
+    "projectName": "Project name",
+    "projectUrl": "Site URL",
+    "competitorName": "Competitor name",
+    "competitorUrl": "Competitor URL",
+    "mySites": "My sites",
+    "competitorSites": "Competitor sites",
+    "selectedProject": "Selected project",
+    "emptyProjects": "No sites have been registered yet.",
+    "emptyCompetitors": "Add competitor sites to power gap analysis.",
+    "storageNotice": "This screen stores workspace data locally. When DATABASE_URL is configured, analysis results are saved to PostgreSQL.",
+    "analysisStatus": "Analysis status",
+    "recentRuns": "Recent analysis runs",
+    "emptyRuns": "No analysis runs yet."
+  },
+  "dashboard": {
+    "eyebrow": "Website Intelligence",
+    "title": "See what to fix first",
+    "subtitle": "Start with single-page analysis and prioritize SEO, security, AI search readiness, and competitor gaps.",
+    "urlPlaceholder": "https://example.com",
+    "overallHealth": "Overall health",
+    "categoryScores": "Category scores",
+    "coreVitals": "Core Web Vitals",
+    "topRecommendations": "Priority recommendations",
+    "competitorGap": "Competitor gap",
+    "aiSummary": "AI summary",
+    "keyRisks": "Key risks",
+    "nextActions": "Next actions",
+    "history": "Recent analysis",
+    "partialReady": "Partial failure ready",
+    "progress": {
+      "seo": "Checking SEO tags...",
+      "security": "Analyzing security headers...",
+      "competitors": "Comparing competitors...",
+      "recommendations": "Generating AI recommendations..."
+    }
+  },
+  "categories": {
+    "performance": "Performance",
+    "seo": "SEO",
+    "aeogeo": "AEO/GEO",
+    "security": "Security",
+    "accessibility": "Accessibility",
+    "contentQuality": "Content Quality",
+    "technicalHealth": "Technical Health"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "label": "Language",
+    "ko": "한국어",
+    "en": "English"
+  }
+}
