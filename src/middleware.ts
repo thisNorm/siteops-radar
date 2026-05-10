@@ -30,6 +30,7 @@ export default auth((request: NextAuthRequest & NextRequest) => {
   const locale = readLocale(request.nextUrl.pathname);
   const pathname = stripLocale(request.nextUrl.pathname);
   const isSignInPage = pathname === "/sign-in";
+  const isAuthBridgePage = pathname === "/auth/sign-in";
   const isPublicPage = pathname === "/" || pathname === "/dashboard";
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAuthenticated = Boolean(request.auth?.user);
@@ -44,6 +45,10 @@ export default auth((request: NextAuthRequest & NextRequest) => {
     }
 
     return intlMiddleware(request);
+  }
+
+  if (isAuthBridgePage) {
+    return NextResponse.next();
   }
 
   if (isPublicPage) {

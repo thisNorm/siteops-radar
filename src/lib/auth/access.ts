@@ -13,8 +13,9 @@ export function getAuthorizedEmails() {
 
 export function getAdminEmails() {
   const explicitAdmins = readEmailList(process.env.ADMIN_EMAILS);
+  const fallbackAdmins = getAuthorizedEmails().filter((email) => email !== "*");
 
-  return explicitAdmins.length > 0 ? explicitAdmins : getAuthorizedEmails();
+  return explicitAdmins.length > 0 ? explicitAdmins : fallbackAdmins;
 }
 
 export function isAuthorizedEmail(email: string | null | undefined) {
@@ -26,8 +27,8 @@ export function isAuthorizedEmail(email: string | null | undefined) {
 
   const authorizedEmails = getAuthorizedEmails();
 
-  if (authorizedEmails.length === 0) {
-    return process.env.NODE_ENV !== "production";
+  if (authorizedEmails.length === 0 || authorizedEmails.includes("*")) {
+    return true;
   }
 
   return authorizedEmails.includes(normalizedEmail);
