@@ -4,7 +4,7 @@ async function signInLocally(page: Page, locale: "ko" | "en") {
   await page.goto(`/${locale}/sign-in`);
   await page.getByLabel(/Development login email|개발 로그인 이메일/).fill("local@siteopsradar.dev");
   await page.getByRole("button", { name: /Continue in local mode|로컬 모드로 계속하기/ }).click();
-  await page.waitForURL(new RegExp(`/${locale}/dashboard$`));
+  await page.waitForURL(new RegExp(`/${locale}/dashboard(?:/preview|/sites(?:/[^/]+)?)?$`));
 }
 
 async function ensureSignedOut(page: Page, locale: "ko" | "en") {
@@ -23,6 +23,7 @@ async function ensureSignedOut(page: Page, locale: "ko" | "en") {
 test("renders public dashboard preview and sign-in CTA", async ({ page }) => {
   await ensureSignedOut(page, "ko");
   await page.goto("/ko/dashboard");
+  await page.waitForURL("/ko/dashboard/preview");
 
   await expect(page.getByRole("heading", { name: "로그인 없이도 사이트 진단을 먼저 체험해보세요" })).toBeVisible();
   await expect(page.getByText("전체 건강 점수")).toBeVisible();
@@ -60,6 +61,7 @@ test("manages projects and competitors", async ({ page }) => {
   await expect(page.locator("div").filter({ hasText: /^Rival Site$/ })).toBeVisible();
 
   await page.goto("/en/dashboard");
+  await page.waitForURL("/en/dashboard/sites");
   await expect(page.getByText("Saved site list")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choose a saved site" })).toBeVisible();
   await expect(page.getByText("The scores currently shown are sample data.")).toHaveCount(0);
