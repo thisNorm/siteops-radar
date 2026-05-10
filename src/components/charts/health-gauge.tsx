@@ -5,7 +5,15 @@ import { RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 
 export function HealthGauge({ score }: { score: number }) {
   const [ready, setReady] = useState(false);
-  const data = [{ name: "score", value: score, fill: "var(--chart-1)" }];
+  const fill =
+    score >= 85
+      ? "#22c55e"
+      : score >= 70
+        ? "#84cc16"
+        : score >= 55
+          ? "#f59e0b"
+          : "#ef4444";
+  const data = [{ name: "score", value: score, fill }];
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setReady(true));
@@ -24,7 +32,7 @@ export function HealthGauge({ score }: { score: number }) {
             endAngle={0}
             barSize={14}
           >
-            <RadialBar dataKey="value" cornerRadius={10} background />
+            <RadialBar dataKey="value" cornerRadius={10} background={{ fill: "var(--muted)" }} />
           </RadialBarChart>
         </ResponsiveContainer>
       ) : null}

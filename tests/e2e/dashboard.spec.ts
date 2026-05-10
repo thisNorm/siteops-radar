@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 test("renders localized dashboard and theme controls", async ({ page }) => {
   await page.goto("/ko/dashboard");
 
-  await expect(page.getByRole("heading", { name: "무엇을 먼저 고쳐야 하는지 바로 확인하세요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "안녕하세요, John님! 👋" })).toBeVisible();
   await expect(page.getByText("전체 상태 점수")).toBeVisible();
-  await expect(page.getByText("우선순위 추천")).toBeVisible();
+  await expect(page.getByText("개선 우선순위 TOP 5")).toBeVisible();
 
   await page.getByLabel("테마").click();
   await page.getByRole("menuitem", { name: "다크" }).click();
@@ -15,7 +15,7 @@ test("renders localized dashboard and theme controls", async ({ page }) => {
 test("shows invalid URL fallback error", async ({ page }) => {
   await page.goto("/en/dashboard");
   await page.getByLabel("https://example.com").fill("file:///etc/passwd");
-  await page.getByRole("button", { name: "Run analysis" }).click();
+  await page.locator("section").first().getByRole("button", { name: "Run analysis" }).click();
   await expect(page.getByText("The submitted URL is not allowed.")).toBeVisible();
 });
 
