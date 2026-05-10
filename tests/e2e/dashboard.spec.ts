@@ -7,11 +7,25 @@ async function signInLocally(page: Page, locale: "ko" | "en") {
   await page.waitForURL(new RegExp(`/${locale}/dashboard$`));
 }
 
+async function ensureSignedOut(page: Page, locale: "ko" | "en") {
+  await page.context().clearCookies();
+  await page.goto(`/${locale}/dashboard`);
+
+  const signOutButton = page.getByRole("button", { name: /Sign out|로그아웃/ });
+
+  if (await signOutButton.isVisible().catch(() => false)) {
+    await signOutButton.click();
+    await page.waitForURL(new RegExp(`/${locale}/sign-in$`));
+    await page.context().clearCookies();
+  }
+}
+
 test("renders public dashboard preview and sign-in CTA", async ({ page }) => {
+  await ensureSignedOut(page, "ko");
   await page.goto("/ko/dashboard");
 
   await expect(page.getByRole("heading", { name: "로그인 없이도 사이트 진단을 먼저 체험해보세요" })).toBeVisible();
-  await expect(page.getByText("전체 상태 점수")).toBeVisible();
+  await expect(page.getByText("전체 건강 점수")).toBeVisible();
   await expect(page.getByRole("complementary").getByRole("button", { name: "로그인" })).toBeVisible();
   await expect(page.getByRole("button", { name: "로그인해서 AI 요약 보기" })).toBeVisible();
 
@@ -44,4 +58,18 @@ test("manages projects and competitors", async ({ page }) => {
   await page.getByRole("button", { name: "Add competitor" }).click();
 
   await expect(page.locator("div").filter({ hasText: /^Rival Site$/ })).toBeVisible();
+
+  await page.goto("/en/dashboard");
+  await expect(page.getByText("Saved site list")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a saved site" })).toBeVisible();
+  await expect(page.getByText("The scores currently shown are sample data.")).toHaveCount(0);
+
+  await page.goto("/en/reports");
+  await expect(page.getByRole("heading", { name: "View saved analyses like a report center" })).toBeVisible();
+  await expect(page.getByText("Latest saved reports")).toBeVisible();
+  await expect(page.getByText("Report coverage")).toBeVisible();
+
+  await page.goto("/en/settings");
+  await expect(page.getByRole("heading", { name: "Review your account and workspace state in one place" })).toBeVisible();
+  await expect(page.getByText("Current workspace rules")).toBeVisible();
 });
