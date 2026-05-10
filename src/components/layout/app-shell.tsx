@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  BarChart3,
   Bell,
   FileText,
   Gauge,
@@ -37,7 +36,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? [{ label: t("nav.admin"), icon: Shield, href: "/admin", requiresAuth: true }]
       : []),
     { label: t("nav.projects"), icon: Activity, href: "/projects", requiresAuth: true },
-    { label: t("nav.competitors"), icon: BarChart3, href: "/competitors", requiresAuth: true },
     { label: t("nav.reports"), icon: FileText, href: "/reports", requiresAuth: true },
     { label: isAuthenticated ? (locale === "ko" ? "알림" : "Alerts") : t("auth.signIn"), icon: Bell, href: "/settings", requiresAuth: true },
     { label: t("nav.settings"), icon: Settings, href: "/settings", requiresAuth: true },

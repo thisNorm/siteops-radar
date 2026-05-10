@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Globe2, Loader2, Radar } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { AnalyzerResult } from "@/types/analysis";
+import type { DashboardAnalyzeMeta } from "./dashboard-view-types";
 
 const steps = ["seo", "security", "competitors", "recommendations"] as const;
 
@@ -17,21 +18,30 @@ export function AnalyzePanel({
   onResult,
   className,
   meta,
+  defaultUrl,
 }: {
-  onResult?: (result: AnalyzerResult) => void;
+  onResult?: (result: AnalyzerResult, meta: DashboardAnalyzeMeta) => void;
   className?: string;
   meta?: ReactNode;
+  defaultUrl?: string;
 }) {
   const t = useTranslations();
   const locale = useLocale();
+  const isKo = locale === "ko";
   const { data: session } = useSession();
-  const [url, setUrl] = useState("https://example.com");
+  const [url, setUrl] = useState(defaultUrl ?? "https://example.com");
   const [running, setRunning] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const progress = useMemo(() => ((stepIndex + 1) / steps.length) * 100, [stepIndex]);
+
+  useEffect(() => {
+    if (defaultUrl) {
+      setUrl(defaultUrl);
+    }
+  }, [defaultUrl]);
 
   async function runAnalysis() {
     setRunning(true);
@@ -49,13 +59,24 @@ export function AnalyzePanel({
         body: JSON.stringify({ url, locale }),
       });
       const payload = await response.json();
+      const analyzeMeta: DashboardAnalyzeMeta = {
+        persisted: Boolean(payload.persistence?.persisted),
+        reason: payload.persistence?.reason,
+        hasHistory: Boolean(payload.persistence?.hasHistory),
+      };
 
       if (payload.result) {
-        onResult?.(payload.result as AnalyzerResult);
+        onResult?.(payload.result as AnalyzerResult, analyzeMeta);
       }
 
       if (!session?.user && payload.persistence?.reason === "AUTH_REQUIRED_FOR_PERSISTENCE") {
         setNotice(t("dashboard.previewNotice"));
+      } else if (session?.user && payload.persistence?.reason === "PROJECT_REQUIRED_FOR_PERSISTENCE") {
+        setNotice(
+          isKo
+            ? "단순 검색은 현재 점수만 보여줍니다. 프로젝트에 추가하면 다음 분석부터 이력과 추이를 관리할 수 있습니다."
+            : "Ad hoc searches only show the current score. Add the site to a project to start tracking history and trends.",
+        );
       } else {
         setNotice(null);
       }

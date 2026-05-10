@@ -14,6 +14,7 @@ import { hasDatabaseUrl } from "./database";
 
 type PersistInput = {
   url: string;
+  projectId?: string;
   status: "succeeded" | "partial" | "failed";
   user: {
     email: string;
@@ -75,7 +76,13 @@ export async function persistAnalysisRun(input: PersistInput) {
   const result = input.result;
   const now = new Date();
   const finalUrl = result?.snapshot.finalUrl ?? input.url;
-  const normalizedUrl = finalUrl.replace(/\/$/, "");
+
+  if (!input.projectId) {
+    return {
+      persisted: false,
+      reason: "PROJECT_REQUIRED_FOR_PERSISTENCE",
+    };
+  }
 
   const user = await prisma.user.upsert({
     where: { email: input.user.email },
@@ -90,24 +97,30 @@ export async function persistAnalysisRun(input: PersistInput) {
     },
   });
 
-  const project = await prisma.project.upsert({
+  const project = await prisma.project.findFirst({
     where: {
-      userId_normalizedUrl: {
-        userId: user.id,
-        normalizedUrl,
-      },
-    },
-    update: {
-      sourceUrl: input.url,
-      updatedAt: now,
-    },
-    create: {
+      id: input.projectId,
       userId: user.id,
-      name: new URL(finalUrl).hostname,
-      sourceUrl: input.url,
-      normalizedUrl,
+    },
+    select: {
+      id: true,
     },
   });
+
+  if (!project) {
+    return {
+      persisted: false,
+      reason: "PROJECT_NOT_FOUND",
+    };
+  }
+
+  const previousHistory = result
+    ? await prisma.analysisHistory.findFirst({
+        where: { projectId: project.id },
+        orderBy: { createdAt: "desc" },
+        select: { overallScore: true },
+      })
+    : null;
 
   const created = await prisma.analysisResult.create({
     data: {
@@ -215,6 +228,7 @@ export async function persistAnalysisRun(input: PersistInput) {
         projectId: project.id,
         analysisResultId: created.id,
         overallScore: result.scores.overall,
+        delta: previousHistory ? result.scores.overall - previousHistory.overallScore : null,
       },
     });
   }
@@ -223,5 +237,6 @@ export async function persistAnalysisRun(input: PersistInput) {
     persisted: true,
     projectId: project.id,
     analysisResultId: created.id,
+    hasHistory: Boolean(previousHistory),
   };
 }

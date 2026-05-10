@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { panelClassName } from "@/components/dashboard/dashboard-view-helpers";
-import type { DashboardLocalizedSummary } from "./dashboard-view-types";
+import type { DashboardAnalysisMode, DashboardLocalizedSummary } from "./dashboard-view-types";
 
 export function DashboardSummaryActionsSection({
   isAuthenticated,
@@ -14,6 +14,7 @@ export function DashboardSummaryActionsSection({
   siteHost,
   localizedSummary,
   model,
+  analysisMode,
   unlockCurrentDashboardPath,
   unlockProjectsPath,
 }: {
@@ -22,6 +23,7 @@ export function DashboardSummaryActionsSection({
   siteHost: string;
   localizedSummary: DashboardLocalizedSummary;
   model: string;
+  analysisMode: DashboardAnalysisMode;
   unlockCurrentDashboardPath: string;
   unlockProjectsPath: string;
 }) {
@@ -48,7 +50,12 @@ export function DashboardSummaryActionsSection({
                 <p className="mt-1 text-sm text-muted-foreground">{siteHost}</p>
               </div>
             </div>
-            <Badge variant="outline">{model}</Badge>
+            <div className="flex items-center gap-2">
+              {analysisMode === "sample" ? (
+                <Badge variant="secondary">{isKo ? "예시 데이터" : "Sample"}</Badge>
+              ) : null}
+              <Badge variant="outline">{model}</Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-7 text-muted-foreground">{localizedSummary.overview}</p>

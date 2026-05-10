@@ -33,9 +33,11 @@
     "selectedProject": "선택된 프로젝트",
     "emptyProjects": "아직 등록된 사이트가 없습니다.",
     "emptyCompetitors": "경쟁 사이트를 추가하면 격차 분석에 사용됩니다.",
-    "storageNotice": "로그인한 계정 기준으로 프로젝트와 분석 이력이 PostgreSQL에 저장됩니다.",
+    "storageNotice": "내 사이트들을 한 곳에서 관리하고 경쟁사와 함께 비교해보세요.",
+    "actionGuide": "선택한 사이트의 경쟁사 목록과 최근 분석 이력은 아래 패널에서 확인할 수 있습니다.",
     "analysisStatus": "분석 상태",
     "recentRuns": "최근 분석 이력",
+    "selectedState": "선택됨",
     "emptyRuns": "아직 실행된 분석이 없습니다.",
     "loading": "프로젝트를 불러오는 중입니다...",
     "loadError": "프로젝트를 불러오지 못했습니다.",
@@ -57,10 +59,10 @@
     "freeModeTitle": "프리뷰 모드",
     "freeModeDescription": "로그인 없이 공개 진단을 체험하고, 프로젝트 저장과 전체 리포트는 로그인 후 이어서 보세요.",
     "googleNotConfigured": "Google OAuth 설정이 아직 연결되지 않았습니다. Client ID와 Secret을 추가하면 이 버튼이 활성화됩니다.",
-    "googleAllowlistRequired": "배포 환경에서는 허용할 Google 이메일을 AUTHORIZED_EMAILS에 먼저 등록해야 합니다.",
+    "googleAllowlistRequired": "필요하면 AUTHORIZED_EMAILS로 로그인 가능한 Google 계정을 제한할 수 있습니다.",
     "googleTemporarilyUnavailable": "현재 Google 로그인을 사용할 수 없습니다. 환경설정을 다시 확인해주세요.",
     "errors": {
-      "AccessDenied": "허용된 Google 계정만 로그인할 수 있습니다.",
+      "AccessDenied": "이 계정은 현재 로그인 허용 목록에 없습니다.",
       "CredentialsSignin": "로컬 개발 로그인 이메일이 맞지 않습니다.",
       "default": "로그인 처리 중 문제가 발생했습니다."
     }

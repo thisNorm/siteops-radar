@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -202,7 +202,7 @@ export function ProjectManager() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: project.url, locale }),
+        body: JSON.stringify({ url: project.url, locale, projectId: project.id }),
       });
       const payload = await response.json();
       const status: AnalysisRunStatus =
@@ -316,6 +316,7 @@ export function ProjectManager() {
             <p className="mb-4 rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
               {t("projects.storageNotice")}
             </p>
+            <p className="mb-4 text-sm text-muted-foreground">{t("projects.actionGuide")}</p>
             {errorMessage ? (
               <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 {errorMessage}
@@ -363,14 +364,24 @@ export function ProjectManager() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">
-                          <Button size="icon-sm" variant="outline" onClick={() => setSelectedId(project.id)}>
-                            <Radar className="h-3.5 w-3.5" />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={project.id === selectedProject?.id}
+                            onClick={() => setSelectedId(project.id)}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {project.id === selectedProject?.id
+                              ? t("projects.selectedState")
+                              : t("actions.select")}
                           </Button>
-                          <Button size="icon-sm" onClick={() => analyzeProject(project)}>
+                          <Button size="sm" onClick={() => analyzeProject(project)}>
                             <Radar className="h-3.5 w-3.5" />
+                            {t("actions.analyze")}
                           </Button>
-                          <Button size="icon-sm" variant="destructive" onClick={() => removeProject(project.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => removeProject(project.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
+                            {t("actions.remove")}
                           </Button>
                         </div>
                       </TableCell>
