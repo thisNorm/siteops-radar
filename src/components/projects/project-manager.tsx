@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Radar, Trash2 } from "lucide-react";
+import { Loader2, Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,14 @@ type Competitor = {
 };
 
 type AnalysisRunStatus = "succeeded" | "partial" | "failed";
+type ProjectStatus = "idle" | "queued" | "running" | AnalysisRunStatus;
 
 type Project = {
   id: string;
   name: string;
   url: string;
   competitors: Competitor[];
-  lastStatus?: "idle" | "running" | "succeeded" | "partial" | "failed";
+  lastStatus?: ProjectStatus;
   runs: {
     id: string;
     url: string;
@@ -32,16 +33,6 @@ type Project = {
     createdAt: string;
   }[];
 };
-
-const storageKey = "siteops-radar-projects";
-
-function createId() {
-  return crypto.randomUUID();
-}
-
-function normalizeDraftUrl(value: string) {
-  return value.includes("://") ? value : `https://${value}`;
-}
 
 export function ProjectManager() {
   const t = useTranslations();
@@ -56,112 +47,153 @@ export function ProjectManager() {
     name: "Competitor",
     url: "https://vercel.com",
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedId) ?? projects[0],
     [projects, selectedId],
   );
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(storageKey);
-    if (stored) {
-      const parsed = JSON.parse(stored) as Project[];
-      setProjects(parsed);
-      setSelectedId(parsed[0]?.id ?? null);
-      return;
+  async function loadProjects(nextSelectedId?: string | null) {
+    setErrorMessage(null);
+
+    const response = await fetch("/api/projects", {
+      cache: "no-store",
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { projects?: Project[]; errorMessage?: string }
+      | null;
+
+    if (!response.ok || !payload?.projects) {
+      throw new Error(payload?.errorMessage ?? "Workspace data could not be loaded.");
     }
 
-    const starter: Project[] = [
-      {
-        id: createId(),
-        name: "Example SaaS",
-        url: "https://example.com",
-        lastStatus: "idle",
-        runs: [],
-        competitors: [
-          {
-            id: createId(),
-            name: "Vercel",
-            url: "https://vercel.com",
-          },
-        ],
-      },
-    ];
-    setProjects(starter);
-    setSelectedId(starter[0].id);
-    window.localStorage.setItem(storageKey, JSON.stringify(starter));
-  }, []);
+    const nextProjects = payload.projects;
 
-  function persist(nextProjects: Project[]) {
     setProjects(nextProjects);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextProjects));
+    setSelectedId((currentSelectedId) => {
+      const preferredId = nextSelectedId ?? currentSelectedId;
+
+      if (preferredId && nextProjects.some((project) => project.id === preferredId)) {
+        return preferredId;
+      }
+
+      return nextProjects[0]?.id ?? null;
+    });
   }
 
-  function addProject() {
-    const url = normalizeDraftUrl(projectDraft.url);
-    const project: Project = {
-      id: createId(),
-      name: projectDraft.name.trim() || new URL(url).hostname,
-      url,
-      competitors: [],
-      lastStatus: "idle",
-      runs: [],
-    };
-    const nextProjects = [project, ...projects];
-    persist(nextProjects);
-    setSelectedId(project.id);
+  useEffect(() => {
+    void (async () => {
+      try {
+        await loadProjects();
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : t("projects.loadError"));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [t]);
+
+  async function refreshProjects(nextSelectedId?: string | null) {
+    setIsRefreshing(true);
+
+    try {
+      await loadProjects(nextSelectedId);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : t("projects.loadError"));
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
-  function removeProject(id: string) {
-    const nextProjects = projects.filter((project) => project.id !== id);
-    persist(nextProjects);
-    setSelectedId(nextProjects[0]?.id ?? null);
+  async function addProject() {
+    setErrorMessage(null);
+
+    const response = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(projectDraft),
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { project?: { id: string }; errorMessage?: string }
+      | null;
+
+    if (!response.ok || !payload?.project) {
+      setErrorMessage(payload?.errorMessage ?? t("projects.saveError"));
+      return;
+    }
+
+    await refreshProjects(payload.project.id);
   }
 
-  function addCompetitor() {
+  async function removeProject(id: string) {
+    setErrorMessage(null);
+    const response = await fetch(`/api/projects/${id}`, {
+      method: "DELETE",
+    });
+    const payload = (await response.json().catch(() => null)) as { errorMessage?: string } | null;
+
+    if (!response.ok) {
+      setErrorMessage(payload?.errorMessage ?? t("projects.deleteError"));
+      return;
+    }
+
+    await refreshProjects();
+  }
+
+  async function addCompetitor() {
     if (!selectedProject) {
       return;
     }
 
-    const url = normalizeDraftUrl(competitorDraft.url);
-    const nextProjects = projects.map((project) =>
-      project.id === selectedProject.id
-        ? {
-            ...project,
-            competitors: [
-              ...project.competitors,
-              {
-                id: createId(),
-                name: competitorDraft.name.trim() || new URL(url).hostname,
-                url,
-              },
-            ],
-          }
-        : project,
-    );
-    persist(nextProjects);
+    setErrorMessage(null);
+
+    const response = await fetch(`/api/projects/${selectedProject.id}/competitors`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(competitorDraft),
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { errorMessage?: string }
+      | null;
+
+    if (!response.ok) {
+      setErrorMessage(payload?.errorMessage ?? t("projects.saveError"));
+      return;
+    }
+
+    await refreshProjects(selectedProject.id);
   }
 
-  function removeCompetitor(id: string) {
+  async function removeCompetitor(id: string) {
     if (!selectedProject) {
       return;
     }
 
-    persist(
-      projects.map((project) =>
-        project.id === selectedProject.id
-          ? {
-              ...project,
-              competitors: project.competitors.filter((competitor) => competitor.id !== id),
-            }
-          : project,
-      ),
+    setErrorMessage(null);
+
+    const response = await fetch(
+      `/api/projects/${selectedProject.id}/competitors/${id}`,
+      {
+        method: "DELETE",
+      },
     );
+    const payload = (await response.json().catch(() => null)) as { errorMessage?: string } | null;
+
+    if (!response.ok) {
+      setErrorMessage(payload?.errorMessage ?? t("projects.deleteError"));
+      return;
+    }
+
+    await refreshProjects(selectedProject.id);
   }
 
   async function analyzeProject(project: Project) {
-    persist(
-      projects.map((item) =>
+    setErrorMessage(null);
+    setProjects((currentProjects) =>
+      currentProjects.map((item) =>
         item.id === project.id ? { ...item, lastStatus: "running" } : item,
       ),
     );
@@ -178,43 +210,22 @@ export function ProjectManager() {
           ? payload.status
           : "failed";
 
-      persist(
-        projects.map((item) =>
-          item.id === project.id
-            ? {
-                ...item,
-                lastStatus: status,
-                runs: [
-                  {
-                    id: createId(),
-                    url: project.url,
-                    status,
-                    createdAt: new Date().toISOString(),
-                  },
-                  ...(item.runs ?? []),
-                ].slice(0, 8),
-              }
-            : item,
+      if (!response.ok) {
+        setErrorMessage(payload.errorMessage ?? t("projects.analysisError"));
+      }
+
+      await refreshProjects(project.id);
+
+      setProjects((currentProjects) =>
+        currentProjects.map((item) =>
+          item.id === project.id ? { ...item, lastStatus: status } : item,
         ),
       );
     } catch {
-      persist(
-        projects.map((item) =>
-          item.id === project.id
-            ? {
-                ...item,
-                lastStatus: "failed",
-                runs: [
-                  {
-                    id: createId(),
-                    url: project.url,
-                    status: "failed" as const,
-                    createdAt: new Date().toISOString(),
-                  },
-                  ...(item.runs ?? []),
-                ].slice(0, 8),
-              }
-            : item,
+      setErrorMessage(t("projects.analysisError"));
+      setProjects((currentProjects) =>
+        currentProjects.map((item) =>
+          item.id === project.id ? { ...item, lastStatus: "failed" } : item,
         ),
       );
     }
@@ -225,7 +236,12 @@ export function ProjectManager() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("actions.addSite")}</CardTitle>
+            <CardTitle className="flex items-center justify-between text-base">
+              {t("actions.addSite")}
+              <Button size="sm" variant="ghost" onClick={() => void refreshProjects(selectedProject?.id ?? null)}>
+                <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -300,7 +316,17 @@ export function ProjectManager() {
             <p className="mb-4 rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
               {t("projects.storageNotice")}
             </p>
-            {projects.length === 0 ? (
+            {errorMessage ? (
+              <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                {errorMessage}
+              </p>
+            ) : null}
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("projects.loading")}
+              </div>
+            ) : projects.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("projects.emptyProjects")}</p>
             ) : (
               <Table>
@@ -319,11 +345,19 @@ export function ProjectManager() {
                       <TableCell className="max-w-56 truncate text-muted-foreground">
                         {project.url}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={project.lastStatus === "failed" ? "destructive" : "secondary"}>
-                          {project.lastStatus === "running" ? (
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          ) : null}
+                        <TableCell>
+                         <Badge
+                           variant={
+                             project.lastStatus === "failed"
+                               ? "destructive"
+                               : project.lastStatus === "partial"
+                                 ? "outline"
+                                 : "secondary"
+                           }
+                         >
+                           {project.lastStatus === "running" ? (
+                             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                           ) : null}
                           {project.lastStatus ?? "idle"}
                         </Badge>
                       </TableCell>
@@ -406,7 +440,7 @@ export function ProjectManager() {
                       {run.status}
                     </Badge>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(run.createdAt).toLocaleString()}
+                      {new Date(run.createdAt).toLocaleString(locale)}
                     </div>
                   </div>
                 ))}
