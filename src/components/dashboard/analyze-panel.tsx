@@ -1,19 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Radar } from "lucide-react";
+import { Globe2, Loader2, Radar } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import type { AnalyzerResult } from "@/types/analysis";
 
 const steps = ["seo", "security", "competitors", "recommendations"] as const;
 
 export function AnalyzePanel({
   onResult,
+  className,
 }: {
   onResult?: (result: AnalyzerResult) => void;
+  className?: string;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -60,22 +63,29 @@ export function AnalyzePanel({
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="flex flex-col gap-3 md:flex-row">
-        <Input
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          placeholder={t("dashboard.urlPlaceholder")}
-          aria-label={t("dashboard.urlPlaceholder")}
-          className="h-11"
-        />
-        <Button className="h-11 md:w-40" onClick={runAnalysis} disabled={running}>
+    <div className={cn("space-y-3", className)}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border bg-card/90 px-4 py-3 shadow-sm ring-1 ring-black/5">
+          <Globe2 className="h-4 w-4 text-muted-foreground" />
+          <Input
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder={t("dashboard.urlPlaceholder")}
+            aria-label={t("dashboard.urlPlaceholder")}
+            className="h-auto border-0 bg-transparent px-0 py-0 shadow-none ring-0 focus-visible:ring-0"
+          />
+        </div>
+        <Button
+          className="h-12 rounded-2xl px-5 shadow-sm lg:min-w-36"
+          onClick={runAnalysis}
+          disabled={running}
+        >
           {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radar className="h-4 w-4" />}
           {t("actions.analyze")}
         </Button>
       </div>
       {running ? (
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2">
           <Progress value={progress} />
           <p className="text-sm text-muted-foreground">
             {t(`dashboard.progress.${steps[stepIndex]}`)}
