@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Accessibility, FileText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLocale } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { buildSignInPath } from "@/lib/auth/access";
 import { buildCompetitorGapInsights } from "@/lib/analysis/competitor-gap";
 import { DashboardDetailSections } from "@/components/dashboard/dashboard-detail-sections";
@@ -34,6 +35,11 @@ type DashboardViewProps = {
   initialAuthenticated?: boolean;
   initialUserName?: string | null;
   initialProjectOptions?: DashboardProjectOption[];
+  initialAnalysisMode?: DashboardAnalysisMode;
+  initialSelectedProjectId?: string | null;
+  initialLastAnalyzedAt?: string | null;
+  initialHasHistory?: boolean;
+  routeKind?: "preview" | "sites" | "site-detail";
 };
 
 export function DashboardView({
@@ -41,18 +47,24 @@ export function DashboardView({
   initialAuthenticated = false,
   initialUserName = null,
   initialProjectOptions = [],
+  initialAnalysisMode = initialAuthenticated && initialProjectOptions.length > 0 ? "project-list" : "sample",
+  initialSelectedProjectId = null,
+  initialLastAnalyzedAt = null,
+  initialHasHistory = false,
+  routeKind = "preview",
 }: DashboardViewProps) {
   const locale = useLocale();
   const { data: session } = useSession();
+  const router = useRouter();
   const summaryLocale: SummaryLocale = locale === "ko" ? "ko" : "en";
   const [result, setResult] = useState(initialResult);
-  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<Date | null>(null);
-  const [analysisMode, setAnalysisMode] = useState<DashboardAnalysisMode>(
-    initialAuthenticated && initialProjectOptions.length > 0 ? "project-list" : "sample",
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<Date | null>(
+    initialLastAnalyzedAt ? new Date(initialLastAnalyzedAt) : null,
   );
-  const [hasHistory, setHasHistory] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<DashboardAnalysisMode>(initialAnalysisMode);
+  const [hasHistory, setHasHistory] = useState(initialHasHistory);
   const [projectOptions, setProjectOptions] = useState<DashboardProjectOption[]>(initialProjectOptions);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialSelectedProjectId);
   const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
   const [trendWindow, setTrendWindow] = useState<"6" | "12">("6");
   const [vitalsView, setVitalsView] = useState<"mobile" | "desktop">("mobile");
@@ -62,6 +74,8 @@ export function DashboardView({
   const isKo = summaryLocale === "ko";
   const isAuthenticated = initialAuthenticated || Boolean(session?.user);
   const userName = session?.user?.name ?? initialUserName;
+  const previewPath = "/dashboard/preview";
+  const sitesPath = "/dashboard/sites";
   const unlockCurrentDashboardPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
   const unlockRecommendationsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
   const unlockProjectsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/projects`);
@@ -312,6 +326,10 @@ export function DashboardView({
     if (!isAuthenticated) {
       setProjectOptions([]);
       setSelectedProjectId(null);
+      setProjectLoadError(null);
+      if (routeKind !== "preview") {
+        router.replace(previewPath);
+      }
       return;
     }
 
@@ -355,20 +373,36 @@ export function DashboardView({
 
       setProjectOptions(nextProjects);
       setProjectLoadError(null);
+      const hasSelectedProject = Boolean(
+        selectedProjectId && nextProjects.some((project) => project.id === selectedProjectId),
+      );
       setSelectedProjectId((current) =>
         current && nextProjects.some((project) => project.id === current) ? current : null,
       );
-      setAnalysisMode((currentMode) => {
-        if (nextProjects.length === 0) {
-          return currentMode === "adhoc" ? currentMode : "sample";
-        }
 
-        if (currentMode === "adhoc" || currentMode === "managed" || currentMode === "managed-empty") {
-          return currentMode;
+      if (nextProjects.length === 0) {
+        setHasHistory(false);
+        setLastAnalyzedAt(null);
+        setAnalysisMode((currentMode) => (currentMode === "adhoc" ? currentMode : "sample"));
+        if (routeKind !== "preview") {
+          router.replace(previewPath);
         }
+        return;
+      }
 
-        return "project-list";
-      });
+      if (routeKind === "preview") {
+        router.replace(sitesPath);
+        return;
+      }
+
+      if (routeKind === "site-detail" && !hasSelectedProject) {
+        router.replace(sitesPath);
+        return;
+      }
+
+      if (routeKind === "sites") {
+        setAnalysisMode((currentMode) => (currentMode === "adhoc" ? currentMode : "project-list"));
+      }
     }
 
     void loadProjects();
@@ -376,73 +410,15 @@ export function DashboardView({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !selectedProjectId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadProjectContext() {
-      const response = await fetch(`/api/projects/${selectedProjectId}`, { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as
-        | {
-            latestResult?: AnalyzerResult | null;
-            latestAnalyzedAt?: string | null;
-            hasHistory?: boolean;
-            errorMessage?: string;
-          }
-        | null;
-
-      if (!response.ok || !payload) {
-        if (!cancelled) {
-          setProjectLoadError(payload?.errorMessage ?? "Project could not be loaded.");
-        }
-        return;
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      if (payload.latestResult) {
-        setResult(payload.latestResult);
-        setAnalysisMode("managed");
-        setHasHistory(Boolean(payload.hasHistory));
-        setLastAnalyzedAt(payload.latestAnalyzedAt ? new Date(payload.latestAnalyzedAt) : null);
-      } else {
-        setAnalysisMode("managed-empty");
-        setHasHistory(false);
-        setLastAnalyzedAt(null);
-      }
-
-      setProjectLoadError(null);
-    }
-
-    void loadProjectContext();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, selectedProjectId]);
+  }, [isAuthenticated, previewPath, routeKind, router, selectedProjectId, sitesPath]);
 
   function handleProjectSelect(projectId: string) {
     if (projectId === "__sample__") {
-      setSelectedProjectId(null);
-      if (projectOptions.length > 0) {
-        setAnalysisMode("project-list");
-      } else {
-        setResult(initialResult);
-        setAnalysisMode("sample");
-      }
-      setHasHistory(false);
-      setLastAnalyzedAt(null);
+      router.push(projectOptions.length > 0 ? sitesPath : previewPath);
       return;
     }
 
-    setSelectedProjectId(projectId);
+    router.push(`${sitesPath}/${projectId}`);
   }
 
   function handleResult(next: AnalyzerResult, meta: DashboardAnalyzeMeta) {

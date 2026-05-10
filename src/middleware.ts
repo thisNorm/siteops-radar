@@ -31,7 +31,8 @@ export default auth((request: NextAuthRequest & NextRequest) => {
   const pathname = stripLocale(request.nextUrl.pathname);
   const isSignInPage = pathname === "/sign-in";
   const isAuthBridgePage = pathname === "/auth/sign-in";
-  const isPublicPage = pathname === "/" || pathname === "/dashboard";
+  const isPublicPage =
+    pathname === "/" || pathname === "/dashboard" || pathname === "/dashboard/preview";
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAuthenticated = Boolean(request.auth?.user);
   const email =
