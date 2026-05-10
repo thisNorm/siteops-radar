@@ -40,6 +40,23 @@ type SummaryContext = {
 
 type LocalizedSummary = AnalyzerResult["summary"]["ko"];
 
+type LlmConfig = {
+  provider: "generic" | "gemini";
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+  temperature: number;
+  reasoningEffort?: "minimal" | "low" | "medium" | "high" | "none";
+};
+
+function readOptionalEnv(value: string | undefined) {
+  if (!value || value === "undefined" || value === "null") {
+    return undefined;
+  }
+
+  return value;
+}
+
 const summaryShape = z.object({
   overview: z.string().min(1),
   keyRisks: z.array(z.string().min(1)).min(1).max(4),
@@ -260,25 +277,66 @@ export function generateTemplateAnalysisSummary(
   };
 }
 
-function readConfig() {
-  const apiKey = process.env.LLM_API_KEY;
+function parseTemperature(value: string | undefined, fallback: number) {
+  const parsedTemperature = Number(readOptionalEnv(value) ?? String(fallback));
 
-  if (!apiKey) {
+  return Number.isFinite(parsedTemperature)
+    ? Math.min(Math.max(parsedTemperature, 0), 1)
+    : fallback;
+}
+
+function parseReasoningEffort(
+  value: string | undefined,
+): LlmConfig["reasoningEffort"] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value === "minimal" || value === "low" || value === "medium" || value === "high" || value === "none") {
+    return value;
+  }
+
+  return undefined;
+}
+
+export function resolveLlmConfig(): LlmConfig | null {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const geminiBaseUrl = readOptionalEnv(process.env.GEMINI_BASE_URL);
+  const llmModel = readOptionalEnv(process.env.LLM_MODEL);
+  const llmBaseUrl = readOptionalEnv(process.env.LLM_BASE_URL);
+
+  if (geminiApiKey) {
+    return {
+      provider: "gemini",
+      apiKey: geminiApiKey,
+      model: readOptionalEnv(process.env.GEMINI_MODEL) || llmModel || "gemini-3-flash-preview",
+      baseUrl: (geminiBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(
+        /\/$/,
+        "",
+      ),
+      temperature: parseTemperature(process.env.GEMINI_TEMPERATURE ?? process.env.LLM_TEMPERATURE, 0.2),
+      reasoningEffort: parseReasoningEffort(
+        process.env.GEMINI_REASONING_EFFORT ?? process.env.LLM_REASONING_EFFORT,
+      ),
+    };
+  }
+
+  const genericApiKey = process.env.LLM_API_KEY;
+
+  if (!genericApiKey) {
     return null;
   }
 
-  const model = process.env.LLM_MODEL || "gpt-4.1-mini";
-  const baseUrl = (process.env.LLM_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const parsedTemperature = Number(process.env.LLM_TEMPERATURE ?? "0.2");
-  const temperature = Number.isFinite(parsedTemperature)
-    ? Math.min(Math.max(parsedTemperature, 0), 1)
-    : 0.2;
+  const model = llmModel || "gpt-4.1-mini";
+  const baseUrl = (llmBaseUrl || "https://api.openai.com/v1").replace(/\/$/, "");
 
   return {
-    apiKey,
+    provider: "generic",
+    apiKey: genericApiKey,
     model,
     baseUrl,
-    temperature,
+    temperature: parseTemperature(process.env.LLM_TEMPERATURE, 0.2),
+    reasoningEffort: parseReasoningEffort(process.env.LLM_REASONING_EFFORT),
   };
 }
 
@@ -330,7 +388,7 @@ function parseSummaryPayload(content: string) {
 }
 
 async function requestLlmSummary(input: SummaryInput) {
-  const config = readConfig();
+  const config = resolveLlmConfig();
 
   if (!config) {
     return null;
@@ -350,6 +408,7 @@ async function requestLlmSummary(input: SummaryInput) {
       body: JSON.stringify({
         model: config.model,
         temperature: config.temperature,
+        ...(config.reasoningEffort ? { reasoning_effort: config.reasoningEffort } : {}),
         messages: [
           {
             role: "system",

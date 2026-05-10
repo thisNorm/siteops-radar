@@ -18,6 +18,11 @@ Copy `.env.example` and set only the integrations you need:
 ```bash
 DATABASE_URL=""
 PAGESPEED_API_KEY=""
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-3-flash-preview"
+GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+GEMINI_TEMPERATURE="0.2"
+GEMINI_REASONING_EFFORT="low"
 LLM_API_KEY=""
 LLM_MODEL="gpt-4.1-mini"
 LLM_BASE_URL="https://api.openai.com/v1"
@@ -29,6 +34,7 @@ Notes:
 
 - `DATABASE_URL` enables Prisma persistence for analysis runs.
 - `PAGESPEED_API_KEY` enables live PageSpeed Insights data.
+- `GEMINI_*` is the recommended free-tier setup for AI summaries and uses Gemini's OpenAI-compatible endpoint.
 - `LLM_*` uses an OpenAI-compatible chat completions endpoint for localized AI summaries. If no LLM key is configured, the app falls back to a deterministic local summary adapter.
 
 ## Scripts
