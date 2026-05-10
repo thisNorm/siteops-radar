@@ -6,6 +6,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "admin": "Admin",
     "projects": "Projects",
     "competitors": "Competitors",
     "reports": "Reports",
@@ -32,10 +33,37 @@
     "selectedProject": "Selected project",
     "emptyProjects": "No sites have been registered yet.",
     "emptyCompetitors": "Add competitor sites to power gap analysis.",
-    "storageNotice": "This screen stores workspace data locally. When DATABASE_URL is configured, analysis results are saved to PostgreSQL.",
+    "storageNotice": "Projects and analysis history are stored in PostgreSQL for the signed-in account.",
     "analysisStatus": "Analysis status",
     "recentRuns": "Recent analysis runs",
-    "emptyRuns": "No analysis runs yet."
+    "emptyRuns": "No analysis runs yet.",
+    "loading": "Loading projects...",
+    "loadError": "Projects could not be loaded.",
+    "saveError": "The project could not be saved.",
+    "deleteError": "The project could not be deleted.",
+    "analysisError": "The analysis run failed."
+  },
+  "auth": {
+    "eyebrow": "Private workspace",
+    "title": "Sign in to SiteOps Radar",
+    "subtitle": "Use Google sign-in to lock the workspace for personal use and manage projects and analysis history under your account.",
+    "signIn": "Sign in",
+    "continueWithGoogle": "Continue with Google",
+    "continueLocally": "Continue in local mode",
+    "localModeTitle": "Local development sign-in",
+    "localModeDescription": "In development, you can use the local test account to move quickly without Google OAuth.",
+    "localModeEmail": "Development login email",
+    "signOut": "Sign out",
+    "freeModeTitle": "Preview mode",
+    "freeModeDescription": "Try the public audit without signing in, then unlock saved projects and the full report after login.",
+    "googleNotConfigured": "Google OAuth is not connected yet. Add the client ID and secret to enable this button.",
+    "googleAllowlistRequired": "In production, add your Google email to AUTHORIZED_EMAILS before enabling sign-in.",
+    "googleTemporarilyUnavailable": "Google sign-in is temporarily unavailable. Check the environment configuration.",
+    "errors": {
+      "AccessDenied": "Only allowed Google accounts can sign in.",
+      "CredentialsSignin": "The local development login email does not match.",
+      "default": "Something went wrong while signing in."
+    }
   },
   "dashboard": {
     "eyebrow": "Website Intelligence",
@@ -50,6 +78,7 @@
     "aiSummary": "AI summary",
     "keyRisks": "Key risks",
     "nextActions": "Next actions",
+    "previewNotice": "This is a preview analysis. Sign in to save results and unlock the full report.",
     "history": "Recent analysis",
     "partialReady": "Partial failure ready",
     "progress": {
