@@ -1,0 +1,82 @@
+{
+  "app": {
+    "name": "SiteOps Radar",
+    "tagline": "AI 기반 웹사이트 인텔리전스",
+    "description": "성능, SEO, 보안, 접근성, AI 검색 준비도를 한 곳에서 분석합니다."
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "projects": "프로젝트",
+    "competitors": "경쟁사",
+    "reports": "리포트",
+    "settings": "설정"
+  },
+  "actions": {
+    "analyze": "분석 실행",
+    "addSite": "사이트 추가",
+    "addCompetitor": "경쟁사 추가",
+    "viewDetails": "자세히 보기",
+    "save": "저장",
+    "remove": "삭제",
+    "select": "선택"
+  },
+  "projects": {
+    "title": "프로젝트와 경쟁사를 관리하세요",
+    "subtitle": "내 사이트와 경쟁 사이트를 함께 등록하면 분석 결과를 같은 기준으로 비교할 수 있습니다.",
+    "projectName": "프로젝트 이름",
+    "projectUrl": "사이트 URL",
+    "competitorName": "경쟁사 이름",
+    "competitorUrl": "경쟁 사이트 URL",
+    "mySites": "내 사이트",
+    "competitorSites": "경쟁 사이트",
+    "selectedProject": "선택된 프로젝트",
+    "emptyProjects": "아직 등록된 사이트가 없습니다.",
+    "emptyCompetitors": "경쟁 사이트를 추가하면 격차 분석에 사용됩니다.",
+    "storageNotice": "현재 화면은 로컬 작업 공간에 저장됩니다. DATABASE_URL을 설정하면 분석 결과는 PostgreSQL에 저장됩니다.",
+    "analysisStatus": "분석 상태",
+    "recentRuns": "최근 분석 이력",
+    "emptyRuns": "아직 실행된 분석이 없습니다."
+  },
+  "dashboard": {
+    "eyebrow": "Website Intelligence",
+    "title": "무엇을 먼저 고쳐야 하는지 바로 확인하세요",
+    "subtitle": "단일 페이지 분석부터 시작해 SEO, 보안, AI 검색 준비도, 경쟁사 격차를 우선순위로 정리합니다.",
+    "urlPlaceholder": "https://example.com",
+    "overallHealth": "전체 상태 점수",
+    "categoryScores": "영역별 점수",
+    "coreVitals": "Core Web Vitals",
+    "topRecommendations": "우선순위 추천",
+    "competitorGap": "경쟁사 격차",
+    "aiSummary": "AI 요약",
+    "keyRisks": "핵심 위험",
+    "nextActions": "다음 액션",
+    "history": "최근 분석",
+    "partialReady": "부분 실패 대응 가능",
+    "progress": {
+      "seo": "SEO 태그 확인 중...",
+      "security": "보안 헤더 분석 중...",
+      "competitors": "경쟁 사이트 비교 중...",
+      "recommendations": "AI 추천 생성 중..."
+    }
+  },
+  "categories": {
+    "performance": "성능",
+    "seo": "SEO",
+    "aeogeo": "AEO/GEO",
+    "security": "보안",
+    "accessibility": "접근성",
+    "contentQuality": "콘텐츠 품질",
+    "technicalHealth": "기술 상태"
+  },
+  "theme": {
+    "label": "테마",
+    "light": "라이트",
+    "dark": "다크",
+    "system": "시스템"
+  },
+  "locale": {
+    "label": "언어",
+    "ko": "한국어",
+    "en": "English"
+  }
+}
