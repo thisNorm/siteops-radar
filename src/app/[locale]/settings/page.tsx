@@ -12,7 +12,7 @@ export default async function SettingsPage() {
           <CardTitle>{t("nav.settings")}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          API keys, PageSpeed configuration, scheduled analysis, and workspace settings
+          API keys, Google login allowlists, scheduled analysis, and workspace settings
           will live here.
         </CardContent>
       </Card>
