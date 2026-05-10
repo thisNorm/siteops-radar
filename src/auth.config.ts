@@ -13,7 +13,7 @@ function isDevCredentialsEnabled() {
 }
 
 function isGoogleAccessEnabled() {
-  return isGoogleConfigured() && (process.env.NODE_ENV !== "production" || getAuthorizedEmails().length > 0);
+  return isGoogleConfigured();
 }
 
 const credentialsSchema = z.object({
@@ -65,6 +65,10 @@ if (isDevCredentialsEnabled()) {
 export const authConfig: NextAuthConfig = {
   session: {
     strategy: "jwt",
+  },
+  pages: {
+    signIn: "/auth/sign-in",
+    error: "/auth/sign-in",
   },
   providers,
   callbacks: {
