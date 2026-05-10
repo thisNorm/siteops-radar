@@ -10,21 +10,20 @@ import type {
   Recommendation,
   Severity,
 } from "@/types/analysis";
+import { hasDatabaseUrl } from "./database";
 
 type PersistInput = {
   url: string;
   status: "succeeded" | "partial" | "failed";
+  user: {
+    email: string;
+    name: string | null;
+    image: string | null;
+  };
   result?: AnalyzerResult;
   errorCode?: string;
   errorMessage?: string;
 };
-
-const demoUserEmail = "demo@siteopsradar.local";
-
-function hasDatabaseUrl() {
-  const url = process.env.DATABASE_URL;
-  return Boolean(url && !url.includes("user:password") && !url.includes("postgres:postgres"));
-}
 
 const categoryMap: Record<AnalysisCategory, DbRecommendationCategory> = {
   performance: DbRecommendationCategory.performance,
@@ -79,11 +78,15 @@ export async function persistAnalysisRun(input: PersistInput) {
   const normalizedUrl = finalUrl.replace(/\/$/, "");
 
   const user = await prisma.user.upsert({
-    where: { email: demoUserEmail },
-    update: {},
+    where: { email: input.user.email },
+    update: {
+      name: input.user.name ?? undefined,
+      image: input.user.image ?? undefined,
+    },
     create: {
-      email: demoUserEmail,
-      name: "Demo User",
+      email: input.user.email,
+      name: input.user.name,
+      image: input.user.image,
     },
   });
 

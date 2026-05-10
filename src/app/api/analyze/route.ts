@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getCurrentSessionIdentity } from "@/lib/auth/session";
 import { runSinglePageAnalysis } from "@/lib/analyzers/run-analysis";
 import { sampleAnalysis } from "@/lib/analyzers/mock";
 import { persistAnalysisRun } from "@/lib/persistence/analysis-store";
@@ -10,6 +11,8 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const currentUser = await getCurrentSessionIdentity();
+
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
@@ -26,11 +29,17 @@ export async function POST(request: Request) {
 
   try {
     const result = await runSinglePageAnalysis(parsed.data.url, parsed.data.locale);
-    const persistence = await persistAnalysisRun({
-      url: parsed.data.url,
-      status: "succeeded",
-      result,
-    });
+    const persistence = currentUser
+      ? await persistAnalysisRun({
+          url: parsed.data.url,
+          status: "succeeded",
+          user: currentUser,
+          result,
+        })
+      : {
+          persisted: false,
+          reason: "AUTH_REQUIRED_FOR_PERSISTENCE",
+        };
 
     return NextResponse.json({
       status: "succeeded",
@@ -41,12 +50,18 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
 
     if (message.startsWith("BLOCKED") || message === "INVALID_URL") {
-      const persistence = await persistAnalysisRun({
-        url: parsed.data.url,
-        status: "failed",
-        errorCode: message,
-        errorMessage: "The submitted URL is not allowed.",
-      }).catch(() => ({ persisted: false, reason: "PERSISTENCE_FAILED" }));
+      const persistence = currentUser
+        ? await persistAnalysisRun({
+            url: parsed.data.url,
+            status: "failed",
+            user: currentUser,
+            errorCode: message,
+            errorMessage: "The submitted URL is not allowed.",
+          }).catch(() => ({ persisted: false, reason: "PERSISTENCE_FAILED" }))
+        : {
+            persisted: false,
+            reason: "AUTH_REQUIRED_FOR_PERSISTENCE",
+          };
 
       return NextResponse.json(
         {
@@ -59,13 +74,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const persistence = await persistAnalysisRun({
-      url: parsed.data.url,
-      status: "partial",
-      result: sampleAnalysis,
-      errorCode: message,
-      errorMessage: "Live analysis failed. Showing a deterministic fallback result.",
-    }).catch(() => ({ persisted: false, reason: "PERSISTENCE_FAILED" }));
+    const persistence = currentUser
+      ? await persistAnalysisRun({
+          url: parsed.data.url,
+          status: "partial",
+          user: currentUser,
+          result: sampleAnalysis,
+          errorCode: message,
+          errorMessage: "Live analysis failed. Showing a deterministic fallback result.",
+        }).catch(() => ({ persisted: false, reason: "PERSISTENCE_FAILED" }))
+      : {
+          persisted: false,
+          reason: "AUTH_REQUIRED_FOR_PERSISTENCE",
+        };
 
     return NextResponse.json({
       status: "partial",
