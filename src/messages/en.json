@@ -33,9 +33,11 @@
     "selectedProject": "Selected project",
     "emptyProjects": "No sites have been registered yet.",
     "emptyCompetitors": "Add competitor sites to power gap analysis.",
-    "storageNotice": "Projects and analysis history are stored in PostgreSQL for the signed-in account.",
+    "storageNotice": "Manage all your sites in one place and compare them alongside competitors.",
+    "actionGuide": "The selected site's competitors and recent analysis runs appear in the panels below.",
     "analysisStatus": "Analysis status",
     "recentRuns": "Recent analysis runs",
+    "selectedState": "Selected",
     "emptyRuns": "No analysis runs yet.",
     "loading": "Loading projects...",
     "loadError": "Projects could not be loaded.",
@@ -57,10 +59,10 @@
     "freeModeTitle": "Preview mode",
     "freeModeDescription": "Try the public audit without signing in, then unlock saved projects and the full report after login.",
     "googleNotConfigured": "Google OAuth is not connected yet. Add the client ID and secret to enable this button.",
-    "googleAllowlistRequired": "In production, add your Google email to AUTHORIZED_EMAILS before enabling sign-in.",
+    "googleAllowlistRequired": "If needed, use AUTHORIZED_EMAILS to restrict which Google accounts can sign in.",
     "googleTemporarilyUnavailable": "Google sign-in is temporarily unavailable. Check the environment configuration.",
     "errors": {
-      "AccessDenied": "Only allowed Google accounts can sign in.",
+      "AccessDenied": "This account is not in the current sign-in allowlist.",
       "CredentialsSignin": "The local development login email does not match.",
       "default": "Something went wrong while signing in."
     }

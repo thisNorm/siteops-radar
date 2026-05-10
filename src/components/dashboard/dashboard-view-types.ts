@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
-import type { AnalyzerResult, SummaryLocale } from "@/types/analysis";
+import type { AnalysisCategory, AnalysisScores, AnalyzerResult, SummaryLocale } from "@/types/analysis";
 
 export type DashboardMetricCard = {
-  key: string;
+  key: AnalysisCategory;
   label: string;
   score: number;
   icon: LucideIcon;
@@ -43,3 +43,20 @@ export type DashboardVitalRow = {
 };
 
 export type DashboardLocalizedSummary = AnalyzerResult["summary"]["ko"];
+
+export type DashboardAnalysisMode = "sample" | "adhoc" | "managed" | "managed-empty" | "project-list";
+
+export type DashboardAnalyzeMeta = {
+  persisted: boolean;
+  reason?: string;
+  hasHistory?: boolean;
+};
+
+export type DashboardProjectOption = {
+  id: string;
+  name: string;
+  url: string;
+  lastAnalyzedAt?: string;
+  hasAnalysis: boolean;
+  latestScores?: AnalysisScores;
+};

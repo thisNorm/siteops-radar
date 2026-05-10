@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Accessibility, FileText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLocale } from "next-intl";
@@ -9,33 +9,66 @@ import { buildCompetitorGapInsights } from "@/lib/analysis/competitor-gap";
 import { DashboardDetailSections } from "@/components/dashboard/dashboard-detail-sections";
 import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 import { DashboardInsightsSection } from "@/components/dashboard/dashboard-insights-section";
+import { DashboardProjectGrid } from "@/components/dashboard/dashboard-project-grid";
 import { DashboardScoreSection } from "@/components/dashboard/dashboard-score-section";
 import { DashboardSummaryActionsSection } from "@/components/dashboard/dashboard-summary-actions-section";
 import {
   buildTrendSeries,
   categoryKeys,
   clamp,
+  panelClassName,
   safeHostname,
 } from "@/components/dashboard/dashboard-view-helpers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyzerResult, SummaryLocale } from "@/types/analysis";
-import type { DashboardMetricCard, DashboardVitalRow } from "./dashboard-view-types";
+import type {
+  DashboardAnalysisMode,
+  DashboardAnalyzeMeta,
+  DashboardMetricCard,
+  DashboardProjectOption,
+  DashboardVitalRow,
+} from "./dashboard-view-types";
 
-export function DashboardView({ initialResult }: { initialResult: AnalyzerResult }) {
+type DashboardViewProps = {
+  initialResult: AnalyzerResult;
+  initialAuthenticated?: boolean;
+  initialUserName?: string | null;
+  initialProjectOptions?: DashboardProjectOption[];
+};
+
+export function DashboardView({
+  initialResult,
+  initialAuthenticated = false,
+  initialUserName = null,
+  initialProjectOptions = [],
+}: DashboardViewProps) {
   const locale = useLocale();
   const { data: session } = useSession();
   const summaryLocale: SummaryLocale = locale === "ko" ? "ko" : "en";
   const [result, setResult] = useState(initialResult);
-  const [lastAnalyzedAt, setLastAnalyzedAt] = useState(() => new Date());
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<Date | null>(null);
+  const [analysisMode, setAnalysisMode] = useState<DashboardAnalysisMode>(
+    initialAuthenticated && initialProjectOptions.length > 0 ? "project-list" : "sample",
+  );
+  const [hasHistory, setHasHistory] = useState(false);
+  const [projectOptions, setProjectOptions] = useState<DashboardProjectOption[]>(initialProjectOptions);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
   const [trendWindow, setTrendWindow] = useState<"6" | "12">("6");
   const [vitalsView, setVitalsView] = useState<"mobile" | "desktop">("mobile");
   const localizedSummary = result.summary[summaryLocale];
   const siteHost = safeHostname(result.snapshot.finalUrl);
   const pageSpeed = result.snapshot.pageSpeed;
   const isKo = summaryLocale === "ko";
-  const isAuthenticated = Boolean(session?.user);
+  const isAuthenticated = initialAuthenticated || Boolean(session?.user);
+  const userName = session?.user?.name ?? initialUserName;
   const unlockCurrentDashboardPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
   const unlockRecommendationsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
   const unlockProjectsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/projects`);
+  const selectedProject = useMemo(
+    () => projectOptions.find((project) => project.id === selectedProjectId) ?? null,
+    [projectOptions, selectedProjectId],
+  );
   const publicRecommendations = isAuthenticated
     ? result.recommendations.slice(0, 5)
     : result.recommendations.slice(0, 2);
@@ -85,11 +118,11 @@ export function DashboardView({ initialResult }: { initialResult: AnalyzerResult
   );
 
   const trendData = useMemo(
-    () => buildTrendSeries(result.scores.overall, summaryLocale, trendWindow),
-    [result.scores.overall, summaryLocale, trendWindow],
+    () => (hasHistory ? buildTrendSeries(result.scores.overall, summaryLocale, trendWindow) : []),
+    [hasHistory, result.scores.overall, summaryLocale, trendWindow],
   );
 
-  const healthDelta = trendData.at(-1) ? trendData.at(-1)!.score - trendData[0].score : 0;
+  const healthDelta = hasHistory && trendData.length > 1 ? trendData.at(-1)!.score - trendData[0].score : null;
 
   const severityData = useMemo(() => {
     const counts = {
@@ -275,9 +308,151 @@ export function DashboardView({ initialResult }: { initialResult: AnalyzerResult
     [desktopVitals.cls, desktopVitals.inp, desktopVitals.lcp, pageSpeed, vitalsView],
   );
 
-  function handleResult(next: AnalyzerResult) {
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProjectOptions([]);
+      setSelectedProjectId(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProjects() {
+      const response = await fetch("/api/projects", { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            projects?: {
+              id: string;
+              name: string;
+              url: string;
+              lastAnalyzedAt?: string;
+              latestScores?: AnalyzerResult["scores"];
+              runs?: { id: string }[];
+            }[];
+            errorMessage?: string;
+          }
+        | null;
+
+      if (!response.ok || !payload?.projects) {
+        if (!cancelled) {
+          setProjectLoadError(payload?.errorMessage ?? "Projects could not be loaded.");
+        }
+        return;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const nextProjects: DashboardProjectOption[] = payload.projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        url: project.url,
+        lastAnalyzedAt: project.lastAnalyzedAt,
+        hasAnalysis: Boolean(project.runs?.length),
+        latestScores: project.latestScores,
+      }));
+
+      setProjectOptions(nextProjects);
+      setProjectLoadError(null);
+      setSelectedProjectId((current) =>
+        current && nextProjects.some((project) => project.id === current) ? current : null,
+      );
+      setAnalysisMode((currentMode) => {
+        if (nextProjects.length === 0) {
+          return currentMode === "adhoc" ? currentMode : "sample";
+        }
+
+        if (currentMode === "adhoc" || currentMode === "managed" || currentMode === "managed-empty") {
+          return currentMode;
+        }
+
+        return "project-list";
+      });
+    }
+
+    void loadProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !selectedProjectId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProjectContext() {
+      const response = await fetch(`/api/projects/${selectedProjectId}`, { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            latestResult?: AnalyzerResult | null;
+            latestAnalyzedAt?: string | null;
+            hasHistory?: boolean;
+            errorMessage?: string;
+          }
+        | null;
+
+      if (!response.ok || !payload) {
+        if (!cancelled) {
+          setProjectLoadError(payload?.errorMessage ?? "Project could not be loaded.");
+        }
+        return;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      if (payload.latestResult) {
+        setResult(payload.latestResult);
+        setAnalysisMode("managed");
+        setHasHistory(Boolean(payload.hasHistory));
+        setLastAnalyzedAt(payload.latestAnalyzedAt ? new Date(payload.latestAnalyzedAt) : null);
+      } else {
+        setAnalysisMode("managed-empty");
+        setHasHistory(false);
+        setLastAnalyzedAt(null);
+      }
+
+      setProjectLoadError(null);
+    }
+
+    void loadProjectContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, selectedProjectId]);
+
+  function handleProjectSelect(projectId: string) {
+    if (projectId === "__sample__") {
+      setSelectedProjectId(null);
+      if (projectOptions.length > 0) {
+        setAnalysisMode("project-list");
+      } else {
+        setResult(initialResult);
+        setAnalysisMode("sample");
+      }
+      setHasHistory(false);
+      setLastAnalyzedAt(null);
+      return;
+    }
+
+    setSelectedProjectId(projectId);
+  }
+
+  function handleResult(next: AnalyzerResult, meta: DashboardAnalyzeMeta) {
     setResult(next);
+    setAnalysisMode(meta.persisted ? "managed" : "adhoc");
+    setHasHistory(Boolean(meta.hasHistory));
     setLastAnalyzedAt(new Date());
+    if (!meta.persisted) {
+      setSelectedProjectId(null);
+    }
   }
 
   return (
@@ -285,51 +460,96 @@ export function DashboardView({ initialResult }: { initialResult: AnalyzerResult
       <DashboardHero
         isAuthenticated={isAuthenticated}
         isKo={isKo}
-        userName={session?.user?.name}
+        userName={userName}
         summaryLocale={summaryLocale}
         lastAnalyzedAt={lastAnalyzedAt}
+        analysisMode={analysisMode}
+        hasHistory={hasHistory}
+        projectOptions={projectOptions}
+        selectedProjectId={selectedProjectId}
+        selectedProjectUrl={selectedProject?.url}
+        onProjectSelect={handleProjectSelect}
         onResult={handleResult}
       />
-      <DashboardScoreSection
-        result={result}
-        summaryLocale={summaryLocale}
-        healthDelta={healthDelta}
-        metricCards={metricCards}
-        isKo={isKo}
-      />
-      <DashboardInsightsSection
-        isAuthenticated={isAuthenticated}
-        isKo={isKo}
-        radarData={radarData}
-        competitorData={competitorData}
-        localizedSummary={localizedSummary}
-        trendData={trendData}
-        trendWindow={trendWindow}
-        onTrendWindowChange={setTrendWindow}
-        unlockCurrentDashboardPath={unlockCurrentDashboardPath}
-      />
-      <DashboardDetailSections
-        recommendations={result.recommendations}
-        publicRecommendations={publicRecommendations}
-        isAuthenticated={isAuthenticated}
-        isKo={isKo}
-        summaryLocale={summaryLocale}
-        severityData={severityData}
-        severityTotal={severityTotal}
-        vitalRows={vitalRows}
-        vitalsView={vitalsView}
-        onVitalsViewChange={setVitalsView}
-        unlockRecommendationsPath={unlockRecommendationsPath}
-      />
-      <DashboardSummaryActionsSection
-        isAuthenticated={isAuthenticated}
-        isKo={isKo}
-        siteHost={siteHost}
-        localizedSummary={localizedSummary}
-        model={result.summary.model}
-        unlockCurrentDashboardPath={unlockCurrentDashboardPath}
-        unlockProjectsPath={unlockProjectsPath}
-      />
+      {projectLoadError ? (
+        <Card className={panelClassName()}>
+          <CardContent className="py-6 text-sm text-destructive">{projectLoadError}</CardContent>
+        </Card>
+      ) : null}
+      {analysisMode === "project-list" && projectOptions.length > 0 ? (
+        <DashboardProjectGrid
+          isKo={isKo}
+          projects={projectOptions}
+          onSelect={(projectId) => handleProjectSelect(projectId)}
+        />
+      ) : analysisMode === "managed-empty" ? (
+        <Card className={panelClassName()}>
+          <CardHeader>
+            <CardTitle>{isKo ? "아직 저장된 분석이 없습니다" : "No saved analysis yet"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              {isKo
+                ? "선택한 사이트는 프로젝트에 추가되어 있지만, 아직 저장된 분석 결과가 없습니다."
+                : "The selected site exists in your projects, but no saved analysis is available yet."}
+            </p>
+            <p>
+              {isKo
+                ? "프로젝트 페이지에서 분석 실행을 누르면 다음부터 이 사이트의 결과를 대시보드에서 바로 불러올 수 있습니다."
+                : "Run an analysis from the projects page and this site's results will show up here on the dashboard."}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <DashboardScoreSection
+            result={result}
+            summaryLocale={summaryLocale}
+            healthDelta={healthDelta}
+            hasHistory={hasHistory}
+            analysisMode={analysisMode}
+            metricCards={metricCards}
+            isKo={isKo}
+          />
+          <DashboardInsightsSection
+            isAuthenticated={isAuthenticated}
+            isKo={isKo}
+            radarData={radarData}
+            competitorData={competitorData}
+            localizedSummary={localizedSummary}
+            trendData={trendData}
+            trendWindow={trendWindow}
+            hasHistory={hasHistory}
+            analysisMode={analysisMode}
+            onTrendWindowChange={setTrendWindow}
+            unlockCurrentDashboardPath={unlockCurrentDashboardPath}
+            projectActionPath={isAuthenticated ? `/${summaryLocale}/projects` : unlockProjectsPath}
+          />
+          <DashboardDetailSections
+            recommendations={result.recommendations}
+            publicRecommendations={publicRecommendations}
+            isAuthenticated={isAuthenticated}
+            isKo={isKo}
+            summaryLocale={summaryLocale}
+            severityData={severityData}
+            severityTotal={severityTotal}
+            vitalRows={vitalRows}
+            vitalsView={vitalsView}
+            onVitalsViewChange={setVitalsView}
+            unlockRecommendationsPath={unlockRecommendationsPath}
+          />
+          <DashboardSummaryActionsSection
+            isAuthenticated={isAuthenticated}
+            isKo={isKo}
+            siteHost={siteHost}
+            localizedSummary={localizedSummary}
+            model={result.summary.model}
+            analysisMode={analysisMode}
+            unlockCurrentDashboardPath={unlockCurrentDashboardPath}
+            unlockProjectsPath={unlockProjectsPath}
+          />
+        </>
+      )}
     </div>
   );
 }
