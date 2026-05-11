@@ -84,6 +84,10 @@
     "previewNotice": "This is a preview analysis. Sign in to save results and unlock the full report.",
     "history": "Recent analysis",
     "partialReady": "Partial failure ready",
+    "checkingSavedSites": "Checking your saved sites before opening the dashboard.",
+    "checkingSavedSitesDetail": "Signed-in visits first confirm whether you already have saved sites so the dashboard can open on the correct route without showing preview content first.",
+    "loadingSavedSites": "Loading your saved site workspace.",
+    "loadingSavedSitesDetail": "The dashboard is preparing your saved site list and will stay on the managed route instead of falling back to sample content.",
     "progress": {
       "seo": "Checking SEO tags...",
       "security": "Analyzing security headers...",

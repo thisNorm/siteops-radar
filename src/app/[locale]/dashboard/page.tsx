@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/routing";
 import { getWorkspaceOverview } from "@/lib/workspace/overview";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardPage({
   params,
