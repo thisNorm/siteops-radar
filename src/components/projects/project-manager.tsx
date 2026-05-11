@@ -40,12 +40,12 @@ export function ProjectManager() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [projectDraft, setProjectDraft] = useState({
-    name: "SiteOps Radar",
-    url: "https://example.com",
+    name: "",
+    url: "",
   });
   const [competitorDraft, setCompetitorDraft] = useState({
-    name: "Competitor",
-    url: "https://vercel.com",
+    name: "",
+    url: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -126,6 +126,7 @@ export function ProjectManager() {
     }
 
     await refreshProjects(payload.project.id);
+    setProjectDraft({ name: "", url: "" });
   }
 
   async function removeProject(id: string) {
@@ -165,6 +166,7 @@ export function ProjectManager() {
     }
 
     await refreshProjects(selectedProject.id);
+    setCompetitorDraft({ name: "", url: "" });
   }
 
   async function removeCompetitor(id: string) {
@@ -276,6 +278,17 @@ export function ProjectManager() {
             <CardTitle className="text-base">{t("actions.addCompetitor")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-md border bg-muted/40 p-3 text-sm">
+              <div className="font-medium">{t("projects.competitorTarget")}</div>
+              <div className="mt-1 text-muted-foreground">
+                {selectedProject
+                  ? `${selectedProject.name} · ${selectedProject.url}`
+                  : t("projects.competitorTargetEmpty")}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                {t("projects.competitorAttachHint")}
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="competitor-name">{t("projects.competitorName")}</Label>
               <Input
@@ -296,7 +309,7 @@ export function ProjectManager() {
                 }
               />
             </div>
-            <Button className="w-full" variant="secondary" onClick={addCompetitor}>
+            <Button className="w-full" variant="secondary" onClick={addCompetitor} disabled={!selectedProject}>
               <Plus className="h-4 w-4" />
               {t("actions.addCompetitor")}
             </Button>
@@ -317,6 +330,7 @@ export function ProjectManager() {
               {t("projects.storageNotice")}
             </p>
             <p className="mb-4 text-sm text-muted-foreground">{t("projects.actionGuide")}</p>
+            <p className="mb-4 text-sm text-muted-foreground">{t("projects.analysisCascadeHint")}</p>
             {errorMessage ? (
               <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 {errorMessage}

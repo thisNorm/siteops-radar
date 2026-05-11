@@ -1,5 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import type { AnalysisCategory, AnalysisScores, AnalyzerResult, SummaryLocale } from "@/types/analysis";
+import type {
+  AnalysisCategory,
+  AnalysisScores,
+  AnalyzerResult,
+  CompetitorBenchmark,
+  SummaryLocale,
+} from "@/types/analysis";
 
 export type DashboardMetricCard = {
   key: AnalysisCategory;
@@ -56,7 +62,13 @@ export type DashboardProjectOption = {
   id: string;
   name: string;
   url: string;
+  thumbnailUrl?: string;
   lastAnalyzedAt?: string;
   hasAnalysis: boolean;
+  competitorCount: number;
   latestScores?: AnalysisScores;
 };
+
+export type DashboardCompetitorGapLevels = Partial<Record<AnalysisCategory, 0 | 1 | 2 | 3 | 4 | 5>>;
+
+export type DashboardCompetitorBenchmark = CompetitorBenchmark;

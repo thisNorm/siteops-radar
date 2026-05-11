@@ -5,6 +5,44 @@ function matchContent(html: string, pattern: RegExp) {
   return html.match(pattern)?.[1]?.trim();
 }
 
+function toAbsoluteUrl(candidate: string | undefined, baseUrl: string) {
+  if (!candidate) {
+    return undefined;
+  }
+
+  try {
+    return new URL(candidate, baseUrl).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function getThumbnailImageUrl(html: string, finalUrl: string) {
+  return (
+    toAbsoluteUrl(
+      matchContent(
+        html,
+        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      ),
+      finalUrl,
+    ) ??
+    toAbsoluteUrl(
+      matchContent(
+        html,
+        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      ),
+      finalUrl,
+    ) ??
+    toAbsoluteUrl(
+      matchContent(
+        html,
+        /<meta[^>]+itemprop=["']image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      ),
+      finalUrl,
+    )
+  );
+}
+
 function countTag(html: string, tag: string) {
   return (html.match(new RegExp(`<${tag}(\\s|>)`, "gi")) ?? []).length;
 }
@@ -111,6 +149,7 @@ export function createSnapshot({
       html,
       /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
     ),
+    thumbnailImageUrl: getThumbnailImageUrl(html, finalUrl),
     canonicalUrl: matchContent(
       html,
       /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i,

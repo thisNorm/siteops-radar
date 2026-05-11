@@ -48,6 +48,7 @@ export default async function DashboardProjectPage({
       url: projectContext.project.url,
       lastAnalyzedAt: projectContext.latestAnalyzedAt ?? undefined,
       hasAnalysis: Boolean(projectContext.latestResult),
+      competitorCount: projectContext.project.competitorCount,
       latestScores: projectContext.latestResult?.scores,
     });
   }
@@ -64,6 +65,7 @@ export default async function DashboardProjectPage({
         initialSelectedProjectId={projectContext.project.id}
         initialLastAnalyzedAt={projectContext.latestAnalyzedAt}
         initialHasHistory={projectContext.hasHistory}
+        initialCompetitorBenchmark={projectContext.competitorBenchmark}
       />
     </AppShell>
   );

@@ -15,6 +15,19 @@ export type AnalysisScores = Record<AnalysisCategory, number> & {
 
 export type SummaryLocale = "ko" | "en";
 
+export type CompetitorBenchmarkCategory = {
+  category: AnalysisCategory;
+  competitorAverage: number;
+  competitorLeader: number;
+  sampleSize: number;
+};
+
+export type CompetitorBenchmark = {
+  linkedCompetitorCount: number;
+  analyzedCompetitorCount: number;
+  categories: CompetitorBenchmarkCategory[];
+};
+
 export type Finding = {
   id: string;
   category: AnalysisCategory;
@@ -46,6 +59,7 @@ export type PageSnapshot = {
   httpStatus: number;
   fetchedTitle?: string;
   fetchedDescription?: string;
+  thumbnailImageUrl?: string;
   canonicalUrl?: string;
   robotsMeta?: string;
   h1?: string;

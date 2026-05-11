@@ -11,8 +11,12 @@ import {
   getDashboardPreviewPath,
   getProjectsPath,
 } from "@/lib/app-routes";
+import {
+  getCompetitorBenchmarkCategory,
+  getMeasuredAverageGap,
+  getMeasuredCompetitorGapLevel,
+} from "@/lib/analysis/competitor-benchmark";
 import { buildSignInPath } from "@/lib/auth/access";
-import { buildCompetitorGapInsights } from "@/lib/analysis/competitor-gap";
 import { toDashboardProjectOptions } from "@/components/dashboard/dashboard-project-options";
 import { DashboardDetailSections } from "@/components/dashboard/dashboard-detail-sections";
 import { DashboardHero } from "@/components/dashboard/dashboard-hero";
@@ -23,7 +27,6 @@ import { DashboardSummaryActionsSection } from "@/components/dashboard/dashboard
 import {
   buildTrendSeries,
   categoryKeys,
-  clamp,
   getCategoryLabel,
   panelClassName,
   safeHostname,
@@ -33,6 +36,8 @@ import type { AnalyzerResult, SummaryLocale } from "@/types/analysis";
 import type {
   DashboardAnalysisMode,
   DashboardAnalyzeMeta,
+  DashboardCompetitorBenchmark,
+  DashboardCompetitorGapLevels,
   DashboardMetricCard,
   DashboardProjectOption,
   DashboardVitalRow,
@@ -47,6 +52,7 @@ type DashboardViewProps = {
   initialSelectedProjectId?: string | null;
   initialLastAnalyzedAt?: string | null;
   initialHasHistory?: boolean;
+  initialCompetitorBenchmark?: DashboardCompetitorBenchmark | null;
   routeKind?: "preview" | "sites" | "site-detail";
 };
 
@@ -59,6 +65,7 @@ export function DashboardView({
   initialSelectedProjectId = null,
   initialLastAnalyzedAt = null,
   initialHasHistory = false,
+  initialCompetitorBenchmark = null,
   routeKind = "preview",
 }: DashboardViewProps) {
   const locale = useLocale();
@@ -73,6 +80,8 @@ export function DashboardView({
   );
   const [analysisMode, setAnalysisMode] = useState<DashboardAnalysisMode>(initialAnalysisMode);
   const [hasHistory, setHasHistory] = useState(initialHasHistory);
+  const [competitorBenchmark, setCompetitorBenchmark] =
+    useState<DashboardCompetitorBenchmark | null>(initialCompetitorBenchmark);
   const [projectOptions, setProjectOptions] = useState<DashboardProjectOption[]>(initialProjectOptions);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialSelectedProjectId);
   const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
@@ -97,35 +106,61 @@ export function DashboardView({
     () => projectOptions.find((project) => project.id === selectedProjectId) ?? null,
     [projectOptions, selectedProjectId],
   );
+  const linkedCompetitorState =
+    routeKind === "site-detail" && selectedProjectId ? Boolean(selectedProject?.competitorCount) : null;
+  const hasCompetitorBenchmark = Boolean(competitorBenchmark?.analyzedCompetitorCount);
   const publicRecommendations = isAuthenticated
     ? result.recommendations.slice(0, 5)
     : result.recommendations.slice(0, 2);
 
   const radarData = useMemo(
     () =>
-      categoryKeys.map((category, index) => {
+      categoryKeys.map((category) => {
         const ours = result.scores[category];
+        const benchmarkCategory = getCompetitorBenchmarkCategory(competitorBenchmark, category);
+
         return {
           category: getCategoryLabel(category, summaryLocale),
           ours,
-          benchmark: clamp(ours + [6, 8, 7, 9, 4, 5, 6][index], 40, 100),
+          benchmark: benchmarkCategory?.competitorAverage ?? ours,
         };
       }),
-    [result, summaryLocale],
+    [competitorBenchmark, result, summaryLocale],
   );
 
   const competitorData = useMemo(
     () =>
-        buildCompetitorGapInsights(result.scores, result.recommendations)
-          .slice(0, 7)
-          .map((item) => ({
-            category: getCategoryLabel(item.category, summaryLocale),
-            ours: item.ours,
-            competitorAverage: item.competitor,
-            competitorLeader: clamp(item.competitor + 5, 50, 100),
-          })),
-    [result, summaryLocale],
+      !hasCompetitorBenchmark || !competitorBenchmark
+        ? []
+        : competitorBenchmark.categories
+            .slice()
+            .sort(
+              (left, right) =>
+                getMeasuredAverageGap(result.scores, right) -
+                  getMeasuredAverageGap(result.scores, left) ||
+                right.competitorLeader - left.competitorLeader,
+            )
+            .slice(0, 7)
+            .map((item) => ({
+              category: getCategoryLabel(item.category, summaryLocale),
+              ours: result.scores[item.category],
+              competitorAverage: item.competitorAverage,
+              competitorLeader: item.competitorLeader,
+            })),
+    [competitorBenchmark, hasCompetitorBenchmark, result.scores, summaryLocale],
   );
+  const competitorGapLevels = useMemo<DashboardCompetitorGapLevels | null>(() => {
+    if (!hasCompetitorBenchmark || !competitorBenchmark) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      competitorBenchmark.categories.map((item) => [
+        item.category,
+        getMeasuredCompetitorGapLevel(result.scores, item),
+      ]),
+    ) as DashboardCompetitorGapLevels;
+  }, [competitorBenchmark, hasCompetitorBenchmark, result.scores]);
 
   const trendData = useMemo(
     () => (hasHistory ? buildTrendSeries(result.scores.overall, summaryLocale, trendWindow) : []),
@@ -133,6 +168,11 @@ export function DashboardView({
   );
 
   const healthDelta = hasHistory && trendData.length > 1 ? trendData.at(-1)!.score - trendData[0].score : null;
+  const securityEntries = useMemo(
+    () =>
+      [...result.findings, ...result.recommendations].filter((item) => item.category === "security"),
+    [result.findings, result.recommendations],
+  );
 
   const severityData = useMemo(() => {
     const counts = {
@@ -142,7 +182,7 @@ export function DashboardView({
       low: 0,
     };
 
-    [...result.findings, ...result.recommendations].forEach((item) => {
+    securityEntries.forEach((item) => {
       if (item.severity === "critical") {
         counts.critical += 1;
       } else if (item.severity === "high") {
@@ -176,7 +216,7 @@ export function DashboardView({
         color: "#4ade80",
       },
     ].filter((item) => item.value > 0);
-  }, [isKo, result.findings, result.recommendations]);
+  }, [isKo, securityEntries]);
 
   const severityTotal = severityData.reduce((total, item) => total + item.value, 0);
 
@@ -341,6 +381,7 @@ export function DashboardView({
               name: string;
               url: string;
               lastAnalyzedAt?: string;
+              competitorCount: number;
               latestScores?: AnalyzerResult["scores"];
               runs?: { id: string }[];
             }[];
@@ -458,6 +499,7 @@ export function DashboardView({
     setHasHistory(Boolean(meta.hasHistory));
     setLastAnalyzedAt(new Date());
     if (!meta.persisted) {
+      setCompetitorBenchmark(null);
       setSelectedProjectId(null);
     }
   }
@@ -541,6 +583,9 @@ export function DashboardView({
             isKo={isKo}
             radarData={radarData}
             competitorData={competitorData}
+            competitorBenchmark={competitorBenchmark}
+            hasLinkedCompetitors={linkedCompetitorState}
+            selectedProjectName={selectedProject?.name ?? null}
             localizedSummary={localizedSummary}
             trendData={trendData}
             trendWindow={trendWindow}
@@ -552,9 +597,12 @@ export function DashboardView({
           />
           <DashboardDetailSections
             recommendations={result.recommendations}
+            findings={result.findings}
             publicRecommendations={publicRecommendations}
             isAuthenticated={isAuthenticated}
             isKo={isKo}
+            showCompetitorGap={hasCompetitorBenchmark}
+            competitorGapLevels={competitorGapLevels}
             summaryLocale={summaryLocale}
             severityData={severityData}
             severityTotal={severityTotal}

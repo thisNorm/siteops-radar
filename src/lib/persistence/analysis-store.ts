@@ -15,6 +15,7 @@ import { hasDatabaseUrl } from "./database";
 type PersistInput = {
   url: string;
   projectId?: string;
+  competitorSiteId?: string;
   status: "succeeded" | "partial" | "failed";
   user: {
     email: string;
@@ -24,6 +25,7 @@ type PersistInput = {
   result?: AnalyzerResult;
   errorCode?: string;
   errorMessage?: string;
+  trackHistory?: boolean;
 };
 
 const categoryMap: Record<AnalysisCategory, DbRecommendationCategory> = {
@@ -76,6 +78,7 @@ export async function persistAnalysisRun(input: PersistInput) {
   const result = input.result;
   const now = new Date();
   const finalUrl = result?.snapshot.finalUrl ?? input.url;
+  const shouldTrackHistory = input.trackHistory !== false && !input.competitorSiteId;
 
   if (!input.projectId) {
     return {
@@ -114,7 +117,26 @@ export async function persistAnalysisRun(input: PersistInput) {
     };
   }
 
-  const previousHistory = result
+  if (input.competitorSiteId) {
+    const competitor = await prisma.competitorSite.findFirst({
+      where: {
+        id: input.competitorSiteId,
+        projectId: project.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!competitor) {
+      return {
+        persisted: false,
+        reason: "COMPETITOR_NOT_FOUND",
+      };
+    }
+  }
+
+  const previousHistory = result && shouldTrackHistory
     ? await prisma.analysisHistory.findFirst({
         where: { projectId: project.id },
         orderBy: { createdAt: "desc" },
@@ -125,6 +147,7 @@ export async function persistAnalysisRun(input: PersistInput) {
   const created = await prisma.analysisResult.create({
     data: {
       projectId: project.id,
+      competitorSiteId: input.competitorSiteId,
       status: input.status,
       sourceUrl: input.url,
       finalUrl,
@@ -223,14 +246,16 @@ export async function persistAnalysisRun(input: PersistInput) {
       },
     });
 
-    await prisma.analysisHistory.create({
-      data: {
-        projectId: project.id,
-        analysisResultId: created.id,
-        overallScore: result.scores.overall,
-        delta: previousHistory ? result.scores.overall - previousHistory.overallScore : null,
-      },
-    });
+    if (shouldTrackHistory) {
+      await prisma.analysisHistory.create({
+        data: {
+          projectId: project.id,
+          analysisResultId: created.id,
+          overallScore: result.scores.overall,
+          delta: previousHistory ? result.scores.overall - previousHistory.overallScore : null,
+        },
+      });
+    }
   }
 
   return {

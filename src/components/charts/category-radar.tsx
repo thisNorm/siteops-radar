@@ -20,10 +20,12 @@ export function CategoryRadar({
   data,
   oursLabel = "SiteOps Radar",
   benchmarkLabel = "Benchmark",
+  showBenchmark = true,
 }: {
   data: RadarItem[];
   oursLabel?: string;
   benchmarkLabel?: string;
+  showBenchmark?: boolean;
 }) {
   const [ready, setReady] = useState(false);
 
@@ -47,13 +49,15 @@ export function CategoryRadar({
               fill="var(--chart-1)"
               fillOpacity={0.16}
             />
-            <Radar
-              name={benchmarkLabel}
-              dataKey="benchmark"
-              stroke="var(--chart-5)"
-              fill="transparent"
-              strokeDasharray="4 4"
-            />
+            {showBenchmark ? (
+              <Radar
+                name={benchmarkLabel}
+                dataKey="benchmark"
+                stroke="var(--chart-5)"
+                fill="transparent"
+                strokeDasharray="4 4"
+              />
+            ) : null}
           </RadarChart>
         </ResponsiveContainer>
       ) : null}

@@ -30,7 +30,6 @@ import {
 } from "@/lib/app-routes";
 import { buildSignInPath } from "@/lib/auth/access";
 import { cn } from "@/lib/utils";
-import { AppShellWorkspaceCard } from "./app-shell-workspace-card";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LocaleSwitcher } from "./locale-switcher";
 
@@ -120,10 +119,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <AppShellWorkspaceCard
-          isAuthenticated={isAuthenticated}
-          isAdmin={Boolean(session?.user?.isAdmin)}
-        />
         <div className="absolute right-4 bottom-5 left-4 rounded-lg border bg-background/90 px-3 py-3">
           {isAuthenticated ? (
             <>

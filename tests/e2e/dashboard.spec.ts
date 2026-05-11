@@ -44,21 +44,45 @@ test("shows invalid URL fallback error", async ({ page }) => {
 });
 
 test("manages projects and competitors", async ({ page }) => {
+  const runId = Date.now();
+  const projectName = `Acme Site ${runId}`;
+  const projectUrl = `https://example.com/siteops-${runId}`;
+  const competitorName = `Rival Site ${runId}`;
+  const competitorUrl = `https://example.org/rival-${runId}`;
+
   await signInLocally(page, "en");
   await page.goto("/en/projects");
 
   await expect(page.getByRole("heading", { name: "Manage projects and competitors" })).toBeVisible();
-  await page.getByLabel("Project name").fill("Acme Site");
-  await page.getByLabel("Site URL").fill("https://acme.example");
+  await page.getByLabel("Project name").fill(projectName);
+  await page.getByLabel("Site URL").fill(projectUrl);
+  const createProjectResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/projects") &&
+      response.request().method() === "POST" &&
+      response.status() === 201,
+  );
   await page.getByRole("button", { name: "Add site" }).click();
+  const createProjectPayload = await (await createProjectResponse).json();
+  const projectId = createProjectPayload.project.id as string;
 
-  await expect(page.getByRole("cell", { name: "Acme Site" })).toBeVisible();
+  await page.goto("/en/projects");
+  await expect(page.getByText(`${projectName} · ${projectUrl}`)).toBeVisible();
+  const projectRow = page.getByRole("row").filter({ hasText: projectUrl });
+  await expect(projectRow).toBeVisible();
 
-  await page.getByLabel("Competitor name").fill("Rival Site");
-  await page.getByLabel("Competitor URL").fill("https://rival.example");
+  await page.getByLabel("Competitor name").fill(competitorName);
+  await page.getByLabel("Competitor URL").fill(competitorUrl);
+  const createCompetitorResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/projects/${projectId}/competitors`) &&
+      response.request().method() === "POST" &&
+      response.ok(),
+  );
   await page.getByRole("button", { name: "Add competitor" }).click();
+  await createCompetitorResponse;
 
-  await expect(page.locator("div").filter({ hasText: /^Rival Site$/ })).toBeVisible();
+  await expect(page.locator("div").filter({ hasText: new RegExp(`^${competitorName}$`) })).toBeVisible();
 
   await page.goto("/en/dashboard");
   await page.waitForURL("/en/dashboard/sites");

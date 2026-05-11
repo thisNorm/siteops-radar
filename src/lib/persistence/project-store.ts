@@ -1,5 +1,9 @@
 import type { AnalysisStatus } from "@prisma/client";
-import type { AnalysisScores, AnalyzerResult } from "@/types/analysis";
+import {
+  buildCompetitorBenchmark,
+  buildMeasuredCompetitorNarrative,
+} from "@/lib/analysis/competitor-benchmark";
+import type { AnalysisScores, AnalyzerResult, CompetitorBenchmark } from "@/types/analysis";
 import { normalizeUrl } from "@/lib/validators/url";
 import { hasDatabaseUrl } from "./database";
 
@@ -9,8 +13,10 @@ export type WorkspaceProject = {
   id: string;
   name: string;
   url: string;
+  thumbnailUrl?: string;
   lastAnalyzedAt?: string;
   latestScores?: AnalysisScores;
+  competitorCount: number;
   competitors: {
     id: string;
     name: string;
@@ -30,10 +36,12 @@ export type ProjectDashboardContext = {
     id: string;
     name: string;
     url: string;
+    competitorCount: number;
   };
   latestResult: AnalyzerResult | null;
   latestAnalyzedAt: string | null;
   hasHistory: boolean;
+  competitorBenchmark: CompetitorBenchmark | null;
 };
 
 function toProjectStatus(status: AnalysisStatus | null | undefined): ProjectStatus | undefined {
@@ -110,6 +118,15 @@ function toAnalyzerResult(
   };
 }
 
+function readThumbnailUrl(rawSnapshot: unknown) {
+  if (!rawSnapshot || typeof rawSnapshot !== "object") {
+    return undefined;
+  }
+
+  const value = (rawSnapshot as { thumbnailImageUrl?: unknown }).thumbnailImageUrl;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 export async function listProjectsForUser(userId: string): Promise<WorkspaceProject[]> {
   ensureDatabaseUrl();
   const { prisma } = await import("@/lib/db");
@@ -121,6 +138,9 @@ export async function listProjectsForUser(userId: string): Promise<WorkspaceProj
         orderBy: { createdAt: "asc" },
       },
       analysisResults: {
+        where: {
+          competitorSiteId: null,
+        },
         orderBy: { createdAt: "desc" },
         take: 8,
         select: {
@@ -129,6 +149,7 @@ export async function listProjectsForUser(userId: string): Promise<WorkspaceProj
           status: true,
           createdAt: true,
           scores: true,
+          rawSnapshot: true,
         },
       },
     },
@@ -138,8 +159,10 @@ export async function listProjectsForUser(userId: string): Promise<WorkspaceProj
     id: project.id,
     name: project.name,
     url: project.sourceUrl,
+    thumbnailUrl: readThumbnailUrl(project.analysisResults[0]?.rawSnapshot),
     lastAnalyzedAt: project.analysisResults[0]?.createdAt.toISOString(),
     latestScores: project.analysisResults[0]?.scores as AnalysisScores | undefined,
+    competitorCount: project.competitors.length,
     competitors: project.competitors.map((competitor) => ({
       id: competitor.id,
       name: competitor.name,
@@ -170,12 +193,34 @@ export async function getProjectDashboardContext(
       id: true,
       name: true,
       sourceUrl: true,
+      competitors: {
+        select: {
+          id: true,
+          analysisResults: {
+            where: {
+              status: {
+                in: ["succeeded", "partial"],
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 1,
+            select: {
+              scores: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           history: true,
         },
       },
       analysisResults: {
+        where: {
+          competitorSiteId: null,
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -205,16 +250,53 @@ export async function getProjectDashboardContext(
   }
 
   const latestAnalysis = project.analysisResults[0];
+  const latestResult = latestAnalysis ? toAnalyzerResult(latestAnalysis) : null;
+  const competitorBenchmark = buildCompetitorBenchmark(
+    project.competitors.flatMap((competitor) => {
+      const latestCompetitorAnalysis = competitor.analysisResults[0];
+      return latestCompetitorAnalysis
+        ? [latestCompetitorAnalysis.scores as AnalysisScores]
+        : [];
+    }),
+    project.competitors.length,
+  );
+  const latestResultWithBenchmark =
+    latestResult && competitorBenchmark?.analyzedCompetitorCount
+      ? {
+          ...latestResult,
+          summary: {
+            ...latestResult.summary,
+            ko: {
+              ...latestResult.summary.ko,
+              competitorGapNarrative: buildMeasuredCompetitorNarrative(
+                "ko",
+                latestResult.scores,
+                competitorBenchmark,
+              ),
+            },
+            en: {
+              ...latestResult.summary.en,
+              competitorGapNarrative: buildMeasuredCompetitorNarrative(
+                "en",
+                latestResult.scores,
+                competitorBenchmark,
+              ),
+            },
+          },
+        }
+      : latestResult;
 
   return {
     project: {
       id: project.id,
       name: project.name,
       url: project.sourceUrl,
+      competitorCount: project.competitors.length,
     },
-    latestResult: latestAnalysis ? toAnalyzerResult(latestAnalysis) : null,
+    latestResult: latestResultWithBenchmark,
     latestAnalyzedAt: latestAnalysis?.createdAt.toISOString() ?? null,
     hasHistory: project._count.history > 1,
+    competitorBenchmark,
   };
 }
 
@@ -301,6 +383,37 @@ export async function addCompetitorForProject(
       normalizedUrl,
     },
   });
+}
+
+export async function listCompetitorsForProject(userId: string, projectId: string) {
+  ensureDatabaseUrl();
+  const { prisma } = await import("@/lib/db");
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      userId,
+    },
+    select: {
+      competitors: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+          sourceUrl: true,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  return project.competitors.map((competitor) => ({
+    id: competitor.id,
+    name: competitor.name,
+    url: competitor.sourceUrl,
+  }));
 }
 
 export async function deleteCompetitorForProject(userId: string, projectId: string, competitorId: string) {
