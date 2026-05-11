@@ -8,6 +8,7 @@ import { sampleAnalysis } from "@/lib/analyzers/mock";
 import { getWorkspaceOverview } from "@/lib/workspace/overview";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardSitesPage({
   params,

@@ -66,6 +66,10 @@ test("manages projects and competitors", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Choose a saved site" })).toBeVisible();
   await expect(page.getByText("The scores currently shown are sample data.")).toHaveCount(0);
 
+  await page.goto("/en/dashboard/preview");
+  await page.waitForURL("/en/dashboard/sites");
+  await expect(page.getByText("The scores currently shown are sample data.")).toHaveCount(0);
+
   await page.goto("/en/reports");
   await expect(page.getByRole("heading", { name: "View saved analyses like a report center" })).toBeVisible();
   await expect(page.getByText("Latest saved reports")).toBeVisible();

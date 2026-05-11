@@ -13,6 +13,7 @@ import { getProjectDashboardContext } from "@/lib/persistence/project-store";
 import { getWorkspaceOverview } from "@/lib/workspace/overview";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardProjectPage({
   params,

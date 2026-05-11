@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Accessibility, FileText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import { Accessibility, FileText, LoaderCircle, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -62,6 +62,7 @@ export function DashboardView({
   routeKind = "preview",
 }: DashboardViewProps) {
   const locale = useLocale();
+  const tDashboard = useTranslations("dashboard");
   const tProjects = useTranslations("projects");
   const { data: session } = useSession();
   const router = useRouter();
@@ -75,6 +76,9 @@ export function DashboardView({
   const [projectOptions, setProjectOptions] = useState<DashboardProjectOption[]>(initialProjectOptions);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialSelectedProjectId);
   const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
+  const [hasResolvedManagedRoute, setHasResolvedManagedRoute] = useState(
+    !initialAuthenticated || routeKind === "site-detail" || initialProjectOptions.length > 0,
+  );
   const [trendWindow, setTrendWindow] = useState<"6" | "12">("6");
   const [vitalsView, setVitalsView] = useState<"mobile" | "desktop">("mobile");
   const localizedSummary = result.summary[summaryLocale];
@@ -319,6 +323,7 @@ export function DashboardView({
       setProjectOptions([]);
       setSelectedProjectId(null);
       setProjectLoadError(null);
+      setHasResolvedManagedRoute(true);
       if (routeKind !== "preview") {
         router.replace(previewPath);
       }
@@ -346,6 +351,7 @@ export function DashboardView({
       if (!response.ok || !payload?.projects) {
         if (!cancelled) {
           setProjectLoadError(payload?.errorMessage ?? projectsLoadErrorFallback);
+          setHasResolvedManagedRoute(true);
         }
         return;
       }
@@ -358,6 +364,7 @@ export function DashboardView({
 
       setProjectOptions(nextProjects);
       setProjectLoadError(null);
+      setHasResolvedManagedRoute(true);
       const hasSelectedProject = Boolean(
         selectedProjectId && nextProjects.some((project) => project.id === selectedProjectId),
       );
@@ -368,8 +375,9 @@ export function DashboardView({
       if (nextProjects.length === 0) {
         setHasHistory(false);
         setLastAnalyzedAt(null);
-        setAnalysisMode((currentMode) => (currentMode === "adhoc" ? currentMode : "sample"));
-        if (routeKind !== "preview") {
+        if (routeKind === "preview") {
+          setAnalysisMode((currentMode) => (currentMode === "adhoc" ? currentMode : "sample"));
+        } else {
           router.replace(previewPath);
         }
         return;
@@ -396,6 +404,44 @@ export function DashboardView({
       cancelled = true;
     };
   }, [isAuthenticated, previewPath, projectsLoadErrorFallback, routeKind, router, selectedProjectId, sitesPath]);
+
+  const shouldHoldManagedRoute =
+    isAuthenticated &&
+    !hasResolvedManagedRoute &&
+    (routeKind === "preview" || routeKind === "sites");
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      routeKind !== "site-detail" &&
+      projectOptions.length === 0 &&
+      !projectLoadError
+    ) {
+      setHasResolvedManagedRoute(false);
+    }
+  }, [isAuthenticated, projectLoadError, projectOptions.length, routeKind]);
+
+  if (shouldHoldManagedRoute) {
+    return (
+      <Card className={panelClassName()}>
+        <CardContent className="flex items-start gap-4 py-6">
+          <LoaderCircle className="mt-0.5 h-5 w-5 animate-spin text-primary" />
+          <div className="space-y-2">
+            <div className="font-medium">
+              {routeKind === "preview"
+                ? tDashboard("checkingSavedSites")
+                : tDashboard("loadingSavedSites")}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {routeKind === "preview"
+                ? tDashboard("checkingSavedSitesDetail")
+                : tDashboard("loadingSavedSitesDetail")}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   function handleProjectSelect(projectId: string) {
     if (projectId === "__sample__") {
@@ -443,6 +489,24 @@ export function DashboardView({
           projects={projectOptions}
           onSelect={(projectId) => handleProjectSelect(projectId)}
         />
+      ) : routeKind === "sites" ? (
+        <Card className={panelClassName()}>
+          <CardHeader>
+            <CardTitle>{isKo ? "저장된 사이트를 준비하고 있습니다" : "Preparing your saved sites"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              {isKo
+                ? "관리형 사이트 목록을 먼저 확인한 뒤, 목록 화면 또는 상세 화면으로 이동합니다."
+                : "The dashboard confirms your managed site list before opening the list or detail route."}
+            </p>
+            <p>
+              {isKo
+                ? "이 경로에서는 예시 점수 화면으로 되돌아가지 않도록 중립 상태만 보여줍니다."
+                : "This route stays on a neutral state instead of falling back to the sample score view."}
+            </p>
+          </CardContent>
+        </Card>
       ) : analysisMode === "managed-empty" ? (
         <Card className={panelClassName()}>
           <CardHeader>
