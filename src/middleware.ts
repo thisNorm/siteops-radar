@@ -3,6 +3,7 @@ import type { NextAuthRequest } from "next-auth";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { authConfig } from "@/auth.config";
+import { appRouteSegments, getDashboardPreviewPath, getSignInPath } from "@/lib/app-routes";
 import { getDefaultAppPath, isAdminEmail } from "@/lib/auth/access";
 import { routing, type Locale } from "./i18n/routing";
 
@@ -32,8 +33,11 @@ export default auth((request: NextAuthRequest & NextRequest) => {
   const isSignInPage = pathname === "/sign-in";
   const isAuthBridgePage = pathname === "/auth/sign-in";
   const isPublicPage =
-    pathname === "/" || pathname === "/dashboard" || pathname === "/dashboard/preview";
-  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+    pathname === "/" ||
+    pathname === appRouteSegments.dashboard ||
+    pathname === appRouteSegments.dashboardPreview;
+  const isAdminRoute =
+    pathname === appRouteSegments.admin || pathname.startsWith(`${appRouteSegments.admin}/`);
   const isAuthenticated = Boolean(request.auth?.user);
   const email =
     request.auth?.user && typeof request.auth.user.email === "string"
@@ -57,7 +61,7 @@ export default auth((request: NextAuthRequest & NextRequest) => {
   }
 
   if (!isAuthenticated) {
-    const signInUrl = new URL(`/${locale}/sign-in`, request.url);
+    const signInUrl = new URL(getSignInPath(locale), request.url);
     signInUrl.searchParams.set(
       "callbackUrl",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
@@ -66,7 +70,7 @@ export default auth((request: NextAuthRequest & NextRequest) => {
   }
 
   if (isAdminRoute && !isAdminEmail(email)) {
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(getDashboardPreviewPath(locale), request.url));
   }
 
   return intlMiddleware(request);

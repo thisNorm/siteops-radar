@@ -1,4 +1,5 @@
 import { redirect } from "@/i18n/navigation";
+import { appRouteSegments } from "@/lib/app-routes";
 import type { Locale } from "@/i18n/routing";
 
 export default async function CompetitorsPage({
@@ -7,5 +8,5 @@ export default async function CompetitorsPage({
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
-  redirect({ href: "/projects", locale });
+  redirect({ href: appRouteSegments.projects, locale });
 }

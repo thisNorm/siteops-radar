@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getAuthProviderAvailability } from "@/auth.config";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
+import { getDashboardPreviewPath } from "@/lib/app-routes";
 import { getDefaultAppPath } from "@/lib/auth/access";
 import type { Locale } from "@/i18n/routing";
 
 function sanitizeCallbackUrl(rawValue: string | undefined, locale: Locale) {
   if (!rawValue || !rawValue.startsWith("/")) {
-    return `/${locale}/dashboard`;
+    return getDashboardPreviewPath(locale);
   }
 
   return rawValue;

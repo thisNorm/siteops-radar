@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { getCurrentSessionIdentity, requireCurrentUser } from "@/lib/auth/session";
 import { hasDatabaseUrl } from "@/lib/persistence/database";
 import { listProjectsForUser, type WorkspaceProject } from "@/lib/persistence/project-store";
@@ -10,6 +11,8 @@ export type WorkspaceOverview = {
 };
 
 export async function getWorkspaceOverview(): Promise<WorkspaceOverview> {
+  noStore();
+
   const identity = await getCurrentSessionIdentity();
   const dbConfigured = hasDatabaseUrl();
 
