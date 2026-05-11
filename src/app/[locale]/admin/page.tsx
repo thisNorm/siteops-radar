@@ -4,8 +4,14 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { appRouteSegments } from "@/lib/app-routes";
 import { requireCurrentUser } from "@/lib/auth/session";
-import { getAdminEmails, getAuthBaseUrl, getGoogleCallbackUrl, isAdminEmail } from "@/lib/auth/access";
+import {
+  getAdminEmails,
+  getAuthBaseUrl,
+  getGoogleCallbackUrl,
+  isAdminEmail,
+} from "@/lib/auth/access";
 import { hasDatabaseUrl } from "@/lib/persistence/database";
 
 async function getAdminOverview() {
@@ -64,7 +70,7 @@ export default async function AdminPage({
   }
 
   if (!isAdminEmail(user.email)) {
-    redirect({ href: "/dashboard", locale });
+    redirect({ href: appRouteSegments.dashboardPreview, locale });
     return null;
   }
 

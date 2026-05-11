@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/routing";
+import { getAdminPath, getDashboardSitesPath, getSignInPath } from "@/lib/app-routes";
 
 function readEmailList(value: string | undefined) {
   return (value ?? "")
@@ -51,11 +52,11 @@ export function isAdminEmail(email: string | null | undefined) {
 }
 
 export function getDefaultAppPath(locale: Locale, email?: string | null) {
-  return isAdminEmail(email) ? `/${locale}/admin` : `/${locale}/dashboard`;
+  return isAdminEmail(email) ? getAdminPath(locale) : getDashboardSitesPath(locale);
 }
 
 export function buildSignInPath(locale: Locale, callbackPath?: string) {
-  const signInPath = `/${locale}/sign-in`;
+  const signInPath = getSignInPath(locale);
 
   if (!callbackPath) {
     return signInPath;

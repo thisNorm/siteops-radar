@@ -1,47 +1,41 @@
 import { redirect } from "next/navigation";
+import { toDashboardProjectOptions } from "@/components/dashboard/dashboard-project-options";
 import { AppShell } from "@/components/layout/app-shell";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
-import type { DashboardProjectOption } from "@/components/dashboard/dashboard-view-types";
+import {
+  getDashboardPreviewPath,
+  getDashboardSitesPath,
+} from "@/lib/app-routes";
+import type { Locale } from "@/i18n/routing";
 import { sampleAnalysis } from "@/lib/analyzers/mock";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { getProjectDashboardContext } from "@/lib/persistence/project-store";
 import { getWorkspaceOverview } from "@/lib/workspace/overview";
 
-function toDashboardProjectOptions(
-  projects: Awaited<ReturnType<typeof getWorkspaceOverview>>["projects"],
-): DashboardProjectOption[] {
-  return projects.map((project) => ({
-    id: project.id,
-    name: project.name,
-    url: project.url,
-    lastAnalyzedAt: project.lastAnalyzedAt,
-    hasAnalysis: Boolean(project.runs.length),
-    latestScores: project.latestScores,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function DashboardProjectPage({
   params,
 }: {
-  params: Promise<{ locale: string; projectId: string }>;
+  params: Promise<{ locale: Locale; projectId: string }>;
 }) {
   const { locale, projectId } = await params;
   const overview = await getWorkspaceOverview();
 
   if (!overview.identity) {
-    redirect(`/${locale}/dashboard/preview` as never);
+    redirect(getDashboardPreviewPath(locale) as never);
   }
 
   const user = await requireCurrentUser();
 
   if (!user) {
-    redirect(`/${locale}/dashboard/preview` as never);
+    redirect(getDashboardPreviewPath(locale) as never);
   }
 
   const projectContext = await getProjectDashboardContext(user.id, projectId);
 
   if (!projectContext) {
-    redirect(`/${locale}/dashboard/sites` as never);
+    redirect(getDashboardSitesPath(locale) as never);
   }
 
   const initialProjectOptions = toDashboardProjectOptions(overview.projects);
