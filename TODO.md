@@ -36,6 +36,6 @@
 - [x] Add competitor gap narrative
 - [ ] Add priority matrix visualization
 - [ ] Add score trend line chart from history
-- [ ] Add Vercel Cron scheduled analysis
+- [x] Add Vercel Cron scheduled analysis
 - [ ] Add report export flow
 - [x] Keep workspace access open for all users
