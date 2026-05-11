@@ -20,15 +20,17 @@ async function ensureSignedOut(page: Page, locale: "ko" | "en") {
   }
 }
 
-test("renders public dashboard preview and sign-in CTA", async ({ page }) => {
+test("renders public dashboard preview and optional sign-in", async ({ page }) => {
   await ensureSignedOut(page, "ko");
   await page.goto("/ko/dashboard");
   await page.waitForURL("/ko/dashboard/preview");
 
-  await expect(page.getByRole("heading", { name: "로그인 없이도 사이트 진단을 먼저 체험해보세요" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "안녕하세요, Public님!" })).toBeVisible();
   await expect(page.getByText("전체 건강 점수")).toBeVisible();
   await expect(page.getByRole("complementary").getByRole("button", { name: "로그인" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "로그인해서 AI 요약 보기" })).toBeVisible();
+  await expect(page.getByText("오픈 모드")).toBeVisible();
+  await expect(page.getByText("AI 요약")).toBeVisible();
+  await expect(page.getByText("우선순위 매트릭스")).toBeVisible();
 
   await signInLocally(page, "ko");
   await page.getByLabel("테마").click();
