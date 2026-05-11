@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Globe2, Loader2, Radar } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,16 +18,17 @@ export function AnalyzePanel({
   className,
   meta,
   defaultUrl,
+  projectId,
 }: {
   onResult?: (result: AnalyzerResult, meta: DashboardAnalyzeMeta) => void;
   className?: string;
   meta?: ReactNode;
   defaultUrl?: string;
+  projectId?: string | null;
 }) {
   const t = useTranslations();
   const locale = useLocale();
   const isKo = locale === "ko";
-  const { data: session } = useSession();
   const [url, setUrl] = useState(defaultUrl ?? "https://example.com");
   const [running, setRunning] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -56,22 +56,21 @@ export function AnalyzePanel({
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url, locale }),
+        body: JSON.stringify({ url, locale, projectId: projectId ?? undefined }),
       });
       const payload = await response.json();
       const analyzeMeta: DashboardAnalyzeMeta = {
         persisted: Boolean(payload.persistence?.persisted),
         reason: payload.persistence?.reason,
         hasHistory: Boolean(payload.persistence?.hasHistory),
+        trendPoints: payload.persistence?.scoreTrend,
       };
 
       if (payload.result) {
         onResult?.(payload.result as AnalyzerResult, analyzeMeta);
       }
 
-      if (!session?.user && payload.persistence?.reason === "AUTH_REQUIRED_FOR_PERSISTENCE") {
-        setNotice(t("dashboard.previewNotice"));
-      } else if (session?.user && payload.persistence?.reason === "PROJECT_REQUIRED_FOR_PERSISTENCE") {
+      if (payload.persistence?.reason === "PROJECT_REQUIRED_FOR_PERSISTENCE") {
         setNotice(
           isKo
             ? "단순 검색은 현재 점수만 보여줍니다. 프로젝트에 추가하면 다음 분석부터 이력과 추이를 관리할 수 있습니다."

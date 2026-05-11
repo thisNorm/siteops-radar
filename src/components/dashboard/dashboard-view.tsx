@@ -22,7 +22,7 @@ import { DashboardProjectGrid } from "@/components/dashboard/dashboard-project-g
 import { DashboardScoreSection } from "@/components/dashboard/dashboard-score-section";
 import { DashboardSummaryActionsSection } from "@/components/dashboard/dashboard-summary-actions-section";
 import {
-  buildTrendSeries,
+  buildTrendDataFromHistory,
   categoryKeys,
   getCategoryLabel,
   panelClassName,
@@ -37,6 +37,7 @@ import type {
   DashboardCompetitorGapLevels,
   DashboardMetricCard,
   DashboardProjectOption,
+  DashboardTrendPoint,
   DashboardVitalRow,
 } from "./dashboard-view-types";
 
@@ -49,6 +50,7 @@ type DashboardViewProps = {
   initialSelectedProjectId?: string | null;
   initialLastAnalyzedAt?: string | null;
   initialHasHistory?: boolean;
+  initialTrendPoints?: DashboardTrendPoint[];
   initialCompetitorBenchmark?: DashboardCompetitorBenchmark | null;
   routeKind?: "preview" | "sites" | "site-detail";
 };
@@ -62,6 +64,7 @@ export function DashboardView({
   initialSelectedProjectId = null,
   initialLastAnalyzedAt = null,
   initialHasHistory = false,
+  initialTrendPoints = [],
   initialCompetitorBenchmark = null,
   routeKind = "preview",
 }: DashboardViewProps) {
@@ -77,6 +80,7 @@ export function DashboardView({
   );
   const [analysisMode, setAnalysisMode] = useState<DashboardAnalysisMode>(initialAnalysisMode);
   const [hasHistory, setHasHistory] = useState(initialHasHistory);
+  const [trendPoints, setTrendPoints] = useState<DashboardTrendPoint[]>(initialTrendPoints);
   const [competitorBenchmark, setCompetitorBenchmark] =
     useState<DashboardCompetitorBenchmark | null>(initialCompetitorBenchmark);
   const [projectOptions, setProjectOptions] = useState<DashboardProjectOption[]>(initialProjectOptions);
@@ -155,11 +159,11 @@ export function DashboardView({
   }, [competitorBenchmark, hasCompetitorBenchmark, result.scores]);
 
   const trendData = useMemo(
-    () => (hasHistory ? buildTrendSeries(result.scores.overall, summaryLocale, trendWindow) : []),
-    [hasHistory, result.scores.overall, summaryLocale, trendWindow],
+    () => buildTrendDataFromHistory(trendPoints, summaryLocale, trendWindow),
+    [summaryLocale, trendPoints, trendWindow],
   );
 
-  const healthDelta = hasHistory && trendData.length > 1 ? trendData.at(-1)!.score - trendData[0].score : null;
+  const healthDelta = trendData.length > 1 ? trendData.at(-1)!.score - trendData[0].score : null;
   const securityEntries = useMemo(
     () =>
       [...result.findings, ...result.recommendations].filter((item) => item.category === "security"),
@@ -407,6 +411,7 @@ export function DashboardView({
 
       if (nextProjects.length === 0) {
         setHasHistory(false);
+        setTrendPoints([]);
         setLastAnalyzedAt(null);
         if (routeKind === "preview") {
           setAnalysisMode((currentMode) => (currentMode === "adhoc" ? currentMode : "sample"));
@@ -488,11 +493,13 @@ export function DashboardView({
   function handleResult(next: AnalyzerResult, meta: DashboardAnalyzeMeta) {
     setResult(next);
     setAnalysisMode(meta.persisted ? "managed" : "adhoc");
-    setHasHistory(Boolean(meta.hasHistory));
+    setHasHistory(Boolean(meta.hasHistory) || Boolean(meta.trendPoints && meta.trendPoints.length > 1));
+    setTrendPoints(meta.trendPoints ?? []);
     setLastAnalyzedAt(new Date());
     if (!meta.persisted) {
       setCompetitorBenchmark(null);
       setSelectedProjectId(null);
+      setTrendPoints([]);
     }
   }
 
