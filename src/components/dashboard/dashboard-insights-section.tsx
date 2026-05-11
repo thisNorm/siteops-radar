@@ -5,7 +5,6 @@ import { CategoryRadar } from "@/components/charts/category-radar";
 import { CompetitorBars } from "@/components/charts/competitor-bars";
 import { ScoreTrendChart } from "@/components/charts/score-trend-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LockedPreview } from "@/components/dashboard/locked-preview";
 import { cn } from "@/lib/utils";
 import { panelClassName } from "./dashboard-view-helpers";
 import type {
@@ -18,7 +17,6 @@ import type {
 } from "./dashboard-view-types";
 
 export function DashboardInsightsSection({
-  isAuthenticated,
   isKo,
   radarData,
   competitorData,
@@ -31,10 +29,8 @@ export function DashboardInsightsSection({
   hasHistory,
   analysisMode,
   onTrendWindowChange,
-  unlockCurrentDashboardPath,
   projectActionPath,
 }: {
-  isAuthenticated: boolean;
   isKo: boolean;
   radarData: DashboardRadarDatum[];
   competitorData: DashboardCompetitorDatum[];
@@ -47,7 +43,6 @@ export function DashboardInsightsSection({
   hasHistory: boolean;
   analysisMode: DashboardAnalysisMode;
   onTrendWindowChange: (window: "6" | "12") => void;
-  unlockCurrentDashboardPath: string;
   projectActionPath: string;
 }) {
   const hasCompetitorBenchmark = Boolean(competitorBenchmark?.analyzedCompetitorCount);
@@ -76,13 +71,7 @@ export function DashboardInsightsSection({
           ? "이번 결과가 기준점입니다. 다음 저장된 분석부터 점수 변화와 추이가 표시됩니다."
           : "This run becomes the baseline. Score changes and trends appear starting with the next saved analysis.";
   const trendActionLabel =
-    isAuthenticated
-      ? isKo
-        ? "프로젝트 관리로 이동"
-        : "Go to project management"
-      : isKo
-        ? "로그인하고 프로젝트 추가"
-        : "Sign in to add a project";
+    isKo ? "프로젝트 관리로 이동" : "Go to project management";
 
   return (
     <section className="grid gap-5 xl:grid-cols-[1.15fr_1.6fr_1.2fr]">
@@ -149,7 +138,7 @@ export function DashboardInsightsSection({
                     : `Run ${selectedProjectName ?? "this site"} again to analyze its linked competitors too`
                   : isKo
                     ? "저장된 사이트에 경쟁사를 연결해야 실제 평균과 상위 비교가 표시됩니다"
-                    : "Link competitors to a saved site to unlock live average and leader comparisons"}
+                    : "Link competitors to a saved site to show live average and leader comparisons"}
               </p>
               <p className="max-w-sm text-sm leading-6 text-muted-foreground">
                 {hasLinkedCompetitors
@@ -169,82 +158,60 @@ export function DashboardInsightsSection({
           </CardContent>
         </Card>
       ) : (
-        <LockedPreview
-          locked={!isAuthenticated}
-          signInPath={unlockCurrentDashboardPath}
-          title={isKo ? "로그인해서 경쟁사 격차 보기" : "Sign in to unlock competitor gaps"}
-          description={
-            isKo
-              ? "경쟁사 비교, 상세 격차 내러티브, 확장 트렌드 리포트는 로그인 후 사용할 수 있습니다."
-              : "Competitor comparisons, narrative gap analysis, and extended trend reporting unlock after sign-in."
-          }
-        >
-          <Card className={panelClassName()}>
-            <CardHeader>
-              <CardTitle className="text-base">
-                {isKo ? "경쟁사 벤치마크" : "Competitor benchmark"} ·{" "}
-                {competitorBenchmark?.analyzedCompetitorCount ?? 0}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <CompetitorBars
-                data={competitorData}
-                oursLabel={isKo ? "내 사이트" : "Our site"}
-                competitorAverageLabel={isKo ? "경쟁사 평균" : "Competitor avg"}
-                competitorLeaderLabel={isKo ? "경쟁사 상위" : "Category leader"}
-              />
-              <p className="text-sm leading-7 text-muted-foreground">
-                {localizedSummary.competitorGapNarrative}
-              </p>
-            </CardContent>
-          </Card>
-        </LockedPreview>
+        <Card className={panelClassName()}>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {isKo ? "경쟁사 벤치마크" : "Competitor benchmark"} ·{" "}
+              {competitorBenchmark?.analyzedCompetitorCount ?? 0}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <CompetitorBars
+              data={competitorData}
+              oursLabel={isKo ? "내 사이트" : "Our site"}
+              competitorAverageLabel={isKo ? "경쟁사 평균" : "Competitor avg"}
+              competitorLeaderLabel={isKo ? "경쟁사 상위" : "Category leader"}
+            />
+            <p className="text-sm leading-7 text-muted-foreground">
+              {localizedSummary.competitorGapNarrative}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {hasHistory ? (
-        <LockedPreview
-          locked={!isAuthenticated}
-          signInPath={unlockCurrentDashboardPath}
-          title={isKo ? "로그인해서 추이 보기" : "Sign in to unlock score trends"}
-          description={
-            isKo
-              ? "히스토리 기반 점수 변화와 누적 추세를 로그인 후 계속 볼 수 있습니다."
-              : "History-based score movement and accumulated trends unlock after sign-in."
-          }
-        >
-          <Card className={panelClassName()}>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-base">{isKo ? "점수 변화 추이" : "Score trend"}</CardTitle>
-              <div className="flex items-center rounded-lg bg-muted/80 p-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => onTrendWindowChange("6")}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 transition-colors",
-                    trendWindow === "6" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
-                  )}
-                >
-                  {isKo ? "최근 6회" : "Last 6"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onTrendWindowChange("12")}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 transition-colors",
-                    trendWindow === "12"
-                      ? "bg-background font-medium text-foreground shadow-sm"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {isKo ? "최근 12주" : "Last 12w"}
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ScoreTrendChart data={trendData} />
-            </CardContent>
-          </Card>
-        </LockedPreview>
+        <Card className={panelClassName()}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-base">{isKo ? "점수 변화 추이" : "Score trend"}</CardTitle>
+            <div className="flex items-center rounded-lg bg-muted/80 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => onTrendWindowChange("6")}
+                className={cn(
+                  "rounded-md px-3 py-1.5 transition-colors",
+                  trendWindow === "6" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                {isKo ? "최근 6회" : "Last 6"}
+              </button>
+              <button
+                type="button"
+                onClick={() => onTrendWindowChange("12")}
+                className={cn(
+                  "rounded-md px-3 py-1.5 transition-colors",
+                  trendWindow === "12"
+                    ? "bg-background font-medium text-foreground shadow-sm"
+                    : "text-muted-foreground",
+                )}
+              >
+                {isKo ? "최근 12주" : "Last 12w"}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScoreTrendChart data={trendData} />
+          </CardContent>
+        </Card>
       ) : (
         <Card className={panelClassName()}>
           <CardHeader>
@@ -257,7 +224,7 @@ export function DashboardInsightsSection({
                 {trendPlaceholderDescription}
               </p>
             </div>
-            <a href={isAuthenticated ? projectActionPath : unlockCurrentDashboardPath}>
+            <a href={projectActionPath}>
               <Button variant="outline" className="rounded-lg">
                 {trendActionLabel}
               </Button>

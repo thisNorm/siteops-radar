@@ -103,8 +103,8 @@ export function DashboardHero({
               ? `안녕하세요, ${displayName}님!`
               : `Hello, ${displayName}!`
             : isKo
-              ? "로그인 없이도 사이트 진단을 먼저 체험해보세요"
-              : "Try a live site audit before you sign in"}
+              ? "로그인 없이 사이트 진단을 바로 실행하세요"
+              : "Run a live site audit without signing in"}
         </h1>
         <p className="text-sm leading-6 text-muted-foreground">
           {isAuthenticated
@@ -112,8 +112,8 @@ export function DashboardHero({
               ? "오늘도 사이트의 성장을 함께 모니터링해요."
               : "Keep monitoring your website growth today."
             : isKo
-              ? "로그인 없이 핵심 점수를 먼저 확인하고, 상세 리포트는 계정에 저장하세요."
-              : "Preview core scores now, then save the full report to your workspace."}
+              ? "핵심 점수와 상세 리포트를 공개 워크스페이스에서 바로 확인할 수 있습니다."
+              : "Core scores and detailed reports are available immediately in the open workspace."}
         </p>
         <div className="flex max-w-2xl flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-card/70 px-3 py-2 text-sm">
           <Badge variant="outline">{statusLabel}</Badge>

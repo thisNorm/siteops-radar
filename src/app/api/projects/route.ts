@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { createProjectForUser, listProjectsForUser } from "@/lib/persistence/project-store";
+import { hasDatabaseUrl } from "@/lib/persistence/database";
 
 const projectSchema = z.object({
   name: z.string().trim().max(120).default(""),
@@ -9,6 +10,16 @@ const projectSchema = z.object({
 });
 
 export async function GET() {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      {
+        errorCode: "DATABASE_NOT_CONFIGURED",
+        errorMessage: "Workspace storage is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireCurrentUser();
 
   if (!user) {
@@ -39,6 +50,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      {
+        errorCode: "DATABASE_NOT_CONFIGURED",
+        errorMessage: "Workspace storage is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireCurrentUser();
 
   if (!user) {

@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { deleteProjectForUser, getProjectDashboardContext } from "@/lib/persistence/project-store";
+import { hasDatabaseUrl } from "@/lib/persistence/database";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ projectId: string }> },
 ) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      {
+        errorCode: "DATABASE_NOT_CONFIGURED",
+        errorMessage: "Workspace storage is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireCurrentUser();
 
   if (!user) {
@@ -51,6 +62,16 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ projectId: string }> },
 ) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      {
+        errorCode: "DATABASE_NOT_CONFIGURED",
+        errorMessage: "Workspace storage is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireCurrentUser();
 
   if (!user) {

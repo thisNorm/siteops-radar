@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { appRouteSegments } from "@/lib/app-routes";
-import { requireCurrentUser } from "@/lib/auth/session";
+import { getCurrentSessionIdentity } from "@/lib/auth/session";
 import {
   getAdminEmails,
   getAuthBaseUrl,
@@ -62,7 +62,7 @@ export default async function AdminPage({
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
-  const user = await requireCurrentUser();
+  const user = await getCurrentSessionIdentity();
 
   if (!user?.email) {
     redirect({ href: "/sign-in", locale });

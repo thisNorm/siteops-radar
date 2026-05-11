@@ -8,15 +8,12 @@ import { useRouter } from "@/i18n/navigation";
 import {
   appRouteSegments,
   getDashboardProjectSegment,
-  getDashboardPreviewPath,
-  getProjectsPath,
 } from "@/lib/app-routes";
 import {
   getCompetitorBenchmarkCategory,
   getMeasuredAverageGap,
   getMeasuredCompetitorGapLevel,
 } from "@/lib/analysis/competitor-benchmark";
-import { buildSignInPath } from "@/lib/auth/access";
 import { toDashboardProjectOptions } from "@/components/dashboard/dashboard-project-options";
 import { DashboardDetailSections } from "@/components/dashboard/dashboard-detail-sections";
 import { DashboardHero } from "@/components/dashboard/dashboard-hero";
@@ -98,9 +95,6 @@ export function DashboardView({
   const userName = session?.user?.name ?? initialUserName;
   const previewPath = appRouteSegments.dashboardPreview;
   const sitesPath = appRouteSegments.dashboardSites;
-  const unlockCurrentDashboardPath = buildSignInPath(summaryLocale, getDashboardPreviewPath(summaryLocale));
-  const unlockRecommendationsPath = buildSignInPath(summaryLocale, getDashboardPreviewPath(summaryLocale));
-  const unlockProjectsPath = buildSignInPath(summaryLocale, getProjectsPath(summaryLocale));
   const projectsLoadErrorFallback = tProjects("loadError");
   const selectedProject = useMemo(
     () => projectOptions.find((project) => project.id === selectedProjectId) ?? null,
@@ -109,9 +103,7 @@ export function DashboardView({
   const linkedCompetitorState =
     routeKind === "site-detail" && selectedProjectId ? Boolean(selectedProject?.competitorCount) : null;
   const hasCompetitorBenchmark = Boolean(competitorBenchmark?.analyzedCompetitorCount);
-  const publicRecommendations = isAuthenticated
-    ? result.recommendations.slice(0, 5)
-    : result.recommendations.slice(0, 2);
+  const publicRecommendations = result.recommendations.slice(0, 5);
 
   const radarData = useMemo(
     () =>
@@ -579,7 +571,6 @@ export function DashboardView({
             isKo={isKo}
           />
           <DashboardInsightsSection
-            isAuthenticated={isAuthenticated}
             isKo={isKo}
             radarData={radarData}
             competitorData={competitorData}
@@ -592,14 +583,12 @@ export function DashboardView({
             hasHistory={hasHistory}
             analysisMode={analysisMode}
             onTrendWindowChange={setTrendWindow}
-            unlockCurrentDashboardPath={unlockCurrentDashboardPath}
-            projectActionPath={isAuthenticated ? appRouteSegments.projects : unlockProjectsPath}
+            projectActionPath={appRouteSegments.projects}
           />
           <DashboardDetailSections
             recommendations={result.recommendations}
             findings={result.findings}
             publicRecommendations={publicRecommendations}
-            isAuthenticated={isAuthenticated}
             isKo={isKo}
             showCompetitorGap={hasCompetitorBenchmark}
             competitorGapLevels={competitorGapLevels}
@@ -609,17 +598,13 @@ export function DashboardView({
             vitalRows={vitalRows}
             vitalsView={vitalsView}
             onVitalsViewChange={setVitalsView}
-            unlockRecommendationsPath={unlockRecommendationsPath}
           />
           <DashboardSummaryActionsSection
-            isAuthenticated={isAuthenticated}
             isKo={isKo}
             siteHost={siteHost}
             localizedSummary={localizedSummary}
             model={result.summary.model}
             analysisMode={analysisMode}
-            unlockCurrentDashboardPath={unlockCurrentDashboardPath}
-            unlockProjectsPath={unlockProjectsPath}
           />
         </>
       )}

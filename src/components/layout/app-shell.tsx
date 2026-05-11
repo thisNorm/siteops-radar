@@ -9,7 +9,6 @@ import {
   Settings,
   Shield,
   LogOut,
-  Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -22,13 +21,8 @@ import { Link, usePathname } from "@/i18n/navigation";
 import {
   type AppRouteSegment,
   appRouteSegments,
-  getAdminPath,
-  getDashboardPreviewPath,
-  getDashboardSitesPath,
-  getLocalizedAppPath,
   getSignInPath,
 } from "@/lib/app-routes";
-import { buildSignInPath } from "@/lib/auth/access";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LocaleSwitcher } from "./locale-switcher";
@@ -39,29 +33,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAuthenticated = Boolean(session?.user);
-  const dashboardHref = isAuthenticated
-    ? appRouteSegments.dashboardSites
-    : appRouteSegments.dashboardPreview;
-  const dashboardCallbackPath = isAuthenticated ? getDashboardSitesPath(locale) : getDashboardPreviewPath(locale);
-  const nav: { label: string; icon: LucideIcon; href: AppRouteSegment; requiresAuth: boolean }[] = [
-    { label: t("nav.dashboard"), icon: Gauge, href: dashboardHref, requiresAuth: false },
+  const nav: { label: string; icon: LucideIcon; href: AppRouteSegment }[] = [
+    { label: t("nav.dashboard"), icon: Gauge, href: appRouteSegments.dashboard },
     ...(session?.user?.isAdmin
-      ? [{ label: t("nav.admin"), icon: Shield, href: appRouteSegments.admin, requiresAuth: true }]
+      ? [{ label: t("nav.admin"), icon: Shield, href: appRouteSegments.admin }]
       : []),
-    { label: t("nav.projects"), icon: Activity, href: appRouteSegments.projects, requiresAuth: true },
-    { label: t("nav.reports"), icon: FileText, href: appRouteSegments.reports, requiresAuth: true },
-    { label: isAuthenticated ? t("nav.alerts") : t("auth.signIn"), icon: Bell, href: appRouteSegments.settings, requiresAuth: true },
-    { label: t("nav.settings"), icon: Settings, href: appRouteSegments.settings, requiresAuth: true },
+    { label: t("nav.projects"), icon: Activity, href: appRouteSegments.projects },
+    { label: t("nav.reports"), icon: FileText, href: appRouteSegments.reports },
+    { label: t("nav.alerts"), icon: Bell, href: appRouteSegments.settings },
+    { label: t("nav.settings"), icon: Settings, href: appRouteSegments.settings },
   ];
   const initials = (session?.user?.name ?? session?.user?.email ?? "S").charAt(0).toUpperCase();
-  const adminSignInPath = buildSignInPath(locale, getAdminPath(locale));
+  const signInPath = getSignInPath(locale);
 
   function handleSignOut() {
     void signOut({ redirectTo: getSignInPath(locale) });
   }
 
-  function handleSignIn(callbackPath = dashboardCallbackPath) {
-    window.location.assign(buildSignInPath(locale, callbackPath));
+  function handleSignIn() {
+    window.location.assign(signInPath);
   }
 
   return (
@@ -79,43 +69,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="space-y-2">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const locked = item.requiresAuth && !isAuthenticated;
-            const callbackPath = getLocalizedAppPath(locale, item.href);
-            const signInHref = buildSignInPath(locale, callbackPath);
 
             return (
-              locked ? (
-                <a
-                  key={item.label}
-                  href={signInHref}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3.5 py-3 text-sm font-medium transition-colors",
-                    "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                  <Badge variant="outline" className="ml-auto gap-1 rounded-md px-1.5">
-                    <Lock className="h-3 w-3" />
-                    {t("auth.signIn")}
-                  </Badge>
-                </a>
-              ) : (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3.5 py-3 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-violet-50 text-primary ring-1 ring-violet-100"
-                      : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                  {item.label === t("nav.reports") ? <Badge className="ml-auto rounded-md bg-violet-100 px-1.5 text-violet-700 hover:bg-violet-100">AI</Badge> : null}
-                </Link>
-              )
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3.5 py-3 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-violet-50 text-primary ring-1 ring-violet-100"
+                    : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                {item.label}
+                {item.label === t("nav.reports") ? <Badge className="ml-auto rounded-md bg-violet-100 px-1.5 text-violet-700 hover:bg-violet-100">AI</Badge> : null}
+              </Link>
             );
           })}
         </nav>
@@ -168,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="hidden sm:inline">{t("auth.signOut")}</span>
               </Button>
             ) : (
-              <a href={adminSignInPath}>
+              <a href={signInPath}>
                 <Button variant="outline" size="sm">
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">{t("auth.signIn")}</span>

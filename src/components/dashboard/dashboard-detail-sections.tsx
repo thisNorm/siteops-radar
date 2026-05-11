@@ -36,7 +36,6 @@ export function DashboardDetailSections({
   recommendations,
   findings,
   publicRecommendations,
-  isAuthenticated,
   isKo,
   showCompetitorGap,
   competitorGapLevels,
@@ -46,12 +45,10 @@ export function DashboardDetailSections({
   vitalRows,
   vitalsView,
   onVitalsViewChange,
-  unlockRecommendationsPath,
 }: {
   recommendations: Recommendation[];
   findings: Finding[];
   publicRecommendations: Recommendation[];
-  isAuthenticated: boolean;
   isKo: boolean;
   showCompetitorGap: boolean;
   competitorGapLevels?: DashboardCompetitorGapLevels | null;
@@ -61,7 +58,6 @@ export function DashboardDetailSections({
   vitalRows: DashboardVitalRow[];
   vitalsView: "mobile" | "desktop";
   onVitalsViewChange: (view: "mobile" | "desktop") => void;
-  unlockRecommendationsPath: string;
 }) {
   const [improvementsOpen, setImprovementsOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
@@ -108,11 +104,6 @@ export function DashboardDetailSections({
   }
 
   function openImprovements() {
-    if (!isAuthenticated) {
-      window.location.assign(unlockRecommendationsPath);
-      return;
-    }
-
     setImprovementsOpen(true);
   }
 
@@ -195,13 +186,7 @@ export function DashboardDetailSections({
             className="flex items-center gap-2 text-sm font-medium text-primary"
             onClick={openImprovements}
           >
-            {isAuthenticated
-              ? isKo
-                ? "전체 개선 항목 보기"
-                : "View all improvements"
-              : isKo
-                ? "로그인해서 전체 개선 항목 보기"
-                : "Sign in to unlock all improvements"}
+            {isKo ? "전체 개선 항목 보기" : "View all improvements"}
             <ArrowRight className="h-4 w-4" />
           </button>
         </CardContent>
