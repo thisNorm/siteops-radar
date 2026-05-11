@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, ShieldAlert } from "lucide-react";
 import { IssueSeverityDonut } from "@/components/charts/issue-severity-donut";
+import { PriorityMatrix } from "@/components/charts/priority-matrix";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,6 +181,21 @@ export function DashboardDetailSections({
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="rounded-xl border bg-card/60 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium">
+                  {isKo ? "우선순위 매트릭스" : "Priority matrix"}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {isKo
+                    ? "영향도와 난이도를 기준으로 먼저 처리할 작업을 빠르게 분류합니다."
+                    : "Map impact against effort to spot the work worth doing first."}
+                </p>
+              </div>
+            </div>
+            <PriorityMatrix items={recommendations} locale={summaryLocale} />
           </div>
           <button
             type="button"
