@@ -18,6 +18,7 @@ Copy `.env.example` and set only the integrations you need:
 ```bash
 DATABASE_URL=""
 PAGESPEED_API_KEY=""
+CRON_SECRET=""
 AUTH_SECRET=""
 AUTH_URL="https://siteops-radar.vercel.app"
 AUTHORIZED_EMAILS="*"
@@ -42,6 +43,7 @@ Notes:
 
 - `DATABASE_URL` enables Prisma persistence for the open workspace and analysis runs.
 - `PAGESPEED_API_KEY` enables live PageSpeed Insights data.
+- `CRON_SECRET` protects the scheduled analysis endpoint used by Vercel Cron.
 - `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` enable optional Google sign-in.
 - `AUTH_URL` should point at the stable production host you registered in Google Cloud Console.
 - `AUTHORIZED_EMAILS` is optional. Leave it blank or set it to `*` to allow any Google account, or provide a comma-separated list to restrict sign-in.
