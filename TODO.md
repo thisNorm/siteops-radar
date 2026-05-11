@@ -34,8 +34,8 @@
 - [x] Replace heuristic summary with LLM adapter
 - [x] Generate locale-specific AI summaries
 - [x] Add competitor gap narrative
-- [ ] Add priority matrix visualization
-- [ ] Add score trend line chart from history
+- [x] Add priority matrix visualization
+- [x] Add score trend line chart from history
 - [x] Add Vercel Cron scheduled analysis
 - [x] Add report export flow
 - [x] Keep workspace access open for all users
