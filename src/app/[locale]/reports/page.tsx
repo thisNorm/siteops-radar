@@ -8,14 +8,21 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceInfoCard, WorkspaceStatCard } from "@/components/workspace/workspace-cards";
 import { Link } from "@/i18n/navigation";
+import {
+  appRouteSegments,
+  getDashboardProjectPath,
+  getDashboardPreviewPath,
+} from "@/lib/app-routes";
+import type { Locale } from "@/i18n/routing";
 import { getWorkspaceOverview } from "@/lib/workspace/overview";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ReportsPageProps = {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: Locale }>;
 };
 
 function formatDate(date: string | undefined, locale: string) {
@@ -99,7 +106,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
                   ? "리포트 센터는 PostgreSQL에 저장된 프로젝트와 분석 이력을 기반으로 채워집니다."
                   : "The report center is powered by projects and saved analysis history stored in PostgreSQL."}
               </p>
-              <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>
+              <Link href={getDashboardPreviewPath(locale)} className={buttonVariants({ variant: "outline" })}>
                 {isKo ? "대시보드로 이동" : "Go to dashboard"}
               </Link>
             </CardContent>
@@ -120,54 +127,30 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
         ) : null}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{isKo ? "저장된 사이트" : "Saved sites"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">{overview.projects.length}</div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo ? "프로젝트에 등록된 관리 대상 사이트 수" : "Sites currently tracked inside the workspace"}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{isKo ? "리포트 준비 완료" : "Report-ready"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">{projectsWithAnalysis.length}</div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo ? "최신 저장 분석이 있는 사이트 수" : "Sites with a latest saved analysis snapshot"}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{isKo ? "누적 분석 이력" : "Saved analysis runs"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">{totalRuns}</div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo ? "프로젝트 기준으로 저장된 전체 실행 수" : "Total persisted runs captured for your projects"}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{isKo ? "평균 전체 점수" : "Average overall score"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">
-                {averageOverallScore !== null ? averageOverallScore : "—"}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo
-                  ? "최근 저장 결과가 있는 사이트 기준 평균"
-                  : "Average across sites with a saved latest result"}
-              </p>
-            </CardContent>
-          </Card>
+          <WorkspaceStatCard
+            title={isKo ? "저장된 사이트" : "Saved sites"}
+            value={overview.projects.length}
+            description={isKo ? "프로젝트에 등록된 관리 대상 사이트 수" : "Sites currently tracked inside the workspace"}
+          />
+          <WorkspaceStatCard
+            title={isKo ? "리포트 준비 완료" : "Report-ready"}
+            value={projectsWithAnalysis.length}
+            description={isKo ? "최신 저장 분석이 있는 사이트 수" : "Sites with a latest saved analysis snapshot"}
+          />
+          <WorkspaceStatCard
+            title={isKo ? "누적 분석 이력" : "Saved analysis runs"}
+            value={totalRuns}
+            description={isKo ? "프로젝트 기준으로 저장된 전체 실행 수" : "Total persisted runs captured for your projects"}
+          />
+          <WorkspaceStatCard
+            title={isKo ? "평균 전체 점수" : "Average overall score"}
+            value={averageOverallScore !== null ? averageOverallScore : "—"}
+            description={
+              isKo
+                ? "최근 저장 결과가 있는 사이트 기준 평균"
+                : "Average across sites with a saved latest result"
+            }
+          />
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
@@ -181,7 +164,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
                     : "Sites with persisted analysis appear here with current report readiness."}
                 </p>
               </div>
-              <Link href="/projects" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link href={appRouteSegments.projects} className={buttonVariants({ variant: "outline", size: "sm" })}>
                 {isKo ? "프로젝트 관리" : "Manage projects"}
               </Link>
             </CardHeader>
@@ -207,7 +190,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
                         <div className="text-xs text-muted-foreground">{isKo ? "전체 점수" : "Overall"}</div>
                         <div className="text-xl font-semibold">{project.latestScores?.overall ?? "—"}</div>
                       </div>
-                      <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      <Link href={getDashboardProjectPath(locale, project.id)} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                         {isKo ? "대시보드" : "Dashboard"}
                         <ArrowRight className="h-4 w-4" />
                       </Link>
@@ -229,50 +212,44 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
               <CardTitle>{isKo ? "리포트 커버리지" : "Report coverage"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 rounded-xl border border-border/70 p-4">
-                <FileText className="mt-0.5 h-4 w-4 text-primary" />
-                <div className="space-y-1">
-                  <div className="font-medium">{isKo ? "현재 스냅샷" : "Current snapshots"}</div>
-                  <p className="text-sm text-muted-foreground">
-                    {isKo
-                      ? `${projectsWithAnalysis.length}개 사이트가 최신 저장 결과를 보유 중입니다.`
-                      : `${projectsWithAnalysis.length} sites currently have a latest saved result.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl border border-border/70 p-4">
-                <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-                <div className="space-y-1">
-                  <div className="font-medium">{isKo ? "AI 요약 준비" : "AI summary readiness"}</div>
-                  <p className="text-sm text-muted-foreground">
-                    {isKo
-                      ? "저장된 분석 결과에는 한국어/영문 요약이 함께 보존됩니다."
-                      : "Persisted analyses keep both Korean and English AI summaries together."}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl border border-border/70 p-4">
-                <LineChart className="mt-0.5 h-4 w-4 text-primary" />
-                <div className="space-y-1">
-                  <div className="font-medium">{isKo ? "추이 누적" : "Trend accumulation"}</div>
-                  <p className="text-sm text-muted-foreground">
-                    {isKo
-                      ? `${projectsWithHistory}개 사이트가 2회 이상 저장되어 점수 추이를 만들 수 있습니다.`
-                      : `${projectsWithHistory} sites already have 2+ saved runs and can build score trends.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl border border-dashed p-4">
-                <Clock3 className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                <div className="space-y-1">
-                  <div className="font-medium">{isKo ? "다음 단계" : "Next up"}</div>
-                  <p className="text-sm text-muted-foreground">
-                    {isKo
-                      ? "공유 가능한 PDF/스냅샷 리포트와 예약 분석은 이 리포트 센터에 이어서 붙일 예정입니다."
-                      : "Shareable exports and scheduled audits can extend from this report center next."}
-                  </p>
-                </div>
-              </div>
+              <WorkspaceInfoCard
+                icon={FileText}
+                title={isKo ? "현재 스냅샷" : "Current snapshots"}
+                description={
+                  isKo
+                    ? `${projectsWithAnalysis.length}개 사이트가 최신 저장 결과를 보유 중입니다.`
+                    : `${projectsWithAnalysis.length} sites currently have a latest saved result.`
+                }
+              />
+              <WorkspaceInfoCard
+                icon={Sparkles}
+                title={isKo ? "AI 요약 준비" : "AI summary readiness"}
+                description={
+                  isKo
+                    ? "저장된 분석 결과에는 한국어/영문 요약이 함께 보존됩니다."
+                    : "Persisted analyses keep both Korean and English AI summaries together."
+                }
+              />
+              <WorkspaceInfoCard
+                icon={LineChart}
+                title={isKo ? "추이 누적" : "Trend accumulation"}
+                description={
+                  isKo
+                    ? `${projectsWithHistory}개 사이트가 2회 이상 저장되어 점수 추이를 만들 수 있습니다.`
+                    : `${projectsWithHistory} sites already have 2+ saved runs and can build score trends.`
+                }
+              />
+              <WorkspaceInfoCard
+                icon={Clock3}
+                title={isKo ? "다음 단계" : "Next up"}
+                description={
+                  isKo
+                    ? "공유 가능한 PDF/스냅샷 리포트와 예약 분석은 이 리포트 센터에 이어서 붙일 예정입니다."
+                    : "Shareable exports and scheduled audits can extend from this report center next."
+                }
+                dashed
+                mutedIcon
+              />
             </CardContent>
           </Card>
         </section>
@@ -289,39 +266,33 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-border/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FolderKanban className="h-4 w-4 text-primary" />
-                {isKo ? "프로젝트 기반 저장" : "Project-backed storage"}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo
+            <WorkspaceInfoCard
+              icon={FolderKanban}
+              title={isKo ? "프로젝트 기반 저장" : "Project-backed storage"}
+              description={
+                isKo
                   ? "단순 검색은 저장되지 않고, 프로젝트에 추가된 사이트만 리포트 이력을 쌓습니다."
-                  : "One-off searches are not persisted; only project-managed sites build report history."}
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                {isKo ? "경쟁사 비교 재료" : "Competitor comparison coverage"}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo
+                  : "One-off searches are not persisted; only project-managed sites build report history."
+              }
+            />
+            <WorkspaceInfoCard
+              icon={CheckCircle2}
+              title={isKo ? "경쟁사 비교 재료" : "Competitor comparison coverage"}
+              description={
+                isKo
                   ? `현재 경쟁사 ${competitorCount}개가 저장되어 비교 내러티브를 보강할 수 있습니다.`
-                  : `${competitorCount} competitors are currently saved and can enrich comparison narratives.`}
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Sparkles className="h-4 w-4 text-primary" />
-                {isKo ? "AI 요약 모델" : "AI summary model"}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isKo
+                  : `${competitorCount} competitors are currently saved and can enrich comparison narratives.`
+              }
+            />
+            <WorkspaceInfoCard
+              icon={Sparkles}
+              title={isKo ? "AI 요약 모델" : "AI summary model"}
+              description={
+                isKo
                   ? "현재 리포트는 저장 시점의 요약 모델 결과를 함께 보존합니다."
-                  : "Each saved result preserves the AI summary model output from the analysis run."}
-              </p>
-            </div>
+                  : "Each saved result preserves the AI summary model output from the analysis run."
+              }
+            />
           </CardContent>
         </Card>
       </div>
