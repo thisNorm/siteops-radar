@@ -8,6 +8,7 @@
     "dashboard": "대시보드",
     "admin": "관리자",
     "projects": "프로젝트",
+    "alerts": "알림",
     "competitors": "경쟁사",
     "reports": "리포트",
     "settings": "설정"
@@ -109,5 +110,18 @@
     "label": "언어",
     "ko": "한국어",
     "en": "English"
+  },
+  "shell": {
+    "userFallback": "SiteOps 사용자",
+    "adminBadge": "관리자",
+    "workspace": {
+      "title": "워크스페이스 상태",
+      "previewBadge": "프리뷰",
+      "memberBadge": "멤버 워크스페이스",
+      "adminBadge": "관리자 워크스페이스",
+      "previewDescription": "공개 프리뷰를 먼저 체험하고, 로그인 후에는 저장된 사이트와 리포트, 워크스페이스 제어 기능을 이어서 사용할 수 있습니다.",
+      "memberDescription": "이 계정에서는 저장된 사이트, 리포트 화면, 워크스페이스 제어 기능이 실제 상태 기준으로 활성화됩니다.",
+      "adminDescription": "이 계정은 일반 워크스페이스 기능과 함께 인증 및 환경 상태를 다루는 관리자 제어도 사용할 수 있습니다."
+    }
   }
 }

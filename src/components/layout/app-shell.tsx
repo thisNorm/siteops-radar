@@ -8,10 +8,10 @@ import {
   LogIn,
   Settings,
   Shield,
-  Sparkles,
   LogOut,
   Lock,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,18 @@ import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/routing";
 import { Separator } from "@/components/ui/separator";
 import { Link, usePathname } from "@/i18n/navigation";
+import {
+  type AppRouteSegment,
+  appRouteSegments,
+  getAdminPath,
+  getDashboardPreviewPath,
+  getDashboardSitesPath,
+  getLocalizedAppPath,
+  getSignInPath,
+} from "@/lib/app-routes";
 import { buildSignInPath } from "@/lib/auth/access";
 import { cn } from "@/lib/utils";
+import { AppShellWorkspaceCard } from "./app-shell-workspace-card";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LocaleSwitcher } from "./locale-switcher";
 
@@ -30,24 +40,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAuthenticated = Boolean(session?.user);
-  const nav = [
-    { label: t("nav.dashboard"), icon: Gauge, href: "/dashboard", requiresAuth: false },
+  const dashboardHref = isAuthenticated
+    ? appRouteSegments.dashboardSites
+    : appRouteSegments.dashboardPreview;
+  const dashboardCallbackPath = isAuthenticated ? getDashboardSitesPath(locale) : getDashboardPreviewPath(locale);
+  const nav: { label: string; icon: LucideIcon; href: AppRouteSegment; requiresAuth: boolean }[] = [
+    { label: t("nav.dashboard"), icon: Gauge, href: dashboardHref, requiresAuth: false },
     ...(session?.user?.isAdmin
-      ? [{ label: t("nav.admin"), icon: Shield, href: "/admin", requiresAuth: true }]
+      ? [{ label: t("nav.admin"), icon: Shield, href: appRouteSegments.admin, requiresAuth: true }]
       : []),
-    { label: t("nav.projects"), icon: Activity, href: "/projects", requiresAuth: true },
-    { label: t("nav.reports"), icon: FileText, href: "/reports", requiresAuth: true },
-    { label: isAuthenticated ? (locale === "ko" ? "알림" : "Alerts") : t("auth.signIn"), icon: Bell, href: "/settings", requiresAuth: true },
-    { label: t("nav.settings"), icon: Settings, href: "/settings", requiresAuth: true },
+    { label: t("nav.projects"), icon: Activity, href: appRouteSegments.projects, requiresAuth: true },
+    { label: t("nav.reports"), icon: FileText, href: appRouteSegments.reports, requiresAuth: true },
+    { label: isAuthenticated ? t("nav.alerts") : t("auth.signIn"), icon: Bell, href: appRouteSegments.settings, requiresAuth: true },
+    { label: t("nav.settings"), icon: Settings, href: appRouteSegments.settings, requiresAuth: true },
   ];
   const initials = (session?.user?.name ?? session?.user?.email ?? "S").charAt(0).toUpperCase();
-  const adminSignInPath = buildSignInPath(locale, `/${locale}/admin`);
+  const adminSignInPath = buildSignInPath(locale, getAdminPath(locale));
 
   function handleSignOut() {
-    void signOut({ redirectTo: `/${locale}/sign-in` });
+    void signOut({ redirectTo: getSignInPath(locale) });
   }
 
-  function handleSignIn(callbackPath = `/${locale}/admin`) {
+  function handleSignIn(callbackPath = dashboardCallbackPath) {
     window.location.assign(buildSignInPath(locale, callbackPath));
   }
 
@@ -67,7 +81,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const locked = item.requiresAuth && !isAuthenticated;
-            const signInHref = buildSignInPath(locale, `/${locale}${item.href}`);
+            const callbackPath = getLocalizedAppPath(locale, item.href);
+            const signInHref = buildSignInPath(locale, callbackPath);
 
             return (
               locked ? (
@@ -105,16 +120,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="absolute right-4 bottom-28 left-4 rounded-lg border border-violet-100 bg-violet-50/70 p-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Sparkles className="h-4 w-4" />
-            <Badge className="rounded-md bg-violet-600 text-white hover:bg-violet-600">Pro Plan</Badge>
-          </div>
-          <p className="mt-3 text-sm font-medium">5 / 10 sites in workspace</p>
-          <div className="mt-4 rounded-md bg-white/80 px-3 py-2 text-center text-sm font-medium text-primary ring-1 ring-violet-100">
-            Upgrade plan
-          </div>
-        </div>
+        <AppShellWorkspaceCard
+          isAuthenticated={isAuthenticated}
+          isAdmin={Boolean(session?.user?.isAdmin)}
+        />
         <div className="absolute right-4 bottom-5 left-4 rounded-lg border bg-background/90 px-3 py-3">
           {isAuthenticated ? (
             <>
@@ -124,8 +133,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 truncate text-sm font-medium">
-                    <span className="truncate">{session?.user?.name ?? "SiteOps User"}</span>
-                    {session?.user?.isAdmin ? <Badge variant="outline">Admin</Badge> : null}
+                    <span className="truncate">{session?.user?.name ?? t("shell.userFallback")}</span>
+                    {session?.user?.isAdmin ? <Badge variant="outline">{t("shell.adminBadge")}</Badge> : null}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">{session?.user?.email ?? "-"}</div>
                 </div>

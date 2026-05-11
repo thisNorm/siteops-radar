@@ -3,10 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Accessibility, FileText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import {
+  appRouteSegments,
+  getDashboardProjectSegment,
+  getDashboardPreviewPath,
+  getProjectsPath,
+} from "@/lib/app-routes";
 import { buildSignInPath } from "@/lib/auth/access";
 import { buildCompetitorGapInsights } from "@/lib/analysis/competitor-gap";
+import { toDashboardProjectOptions } from "@/components/dashboard/dashboard-project-options";
 import { DashboardDetailSections } from "@/components/dashboard/dashboard-detail-sections";
 import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 import { DashboardInsightsSection } from "@/components/dashboard/dashboard-insights-section";
@@ -17,6 +24,7 @@ import {
   buildTrendSeries,
   categoryKeys,
   clamp,
+  getCategoryLabel,
   panelClassName,
   safeHostname,
 } from "@/components/dashboard/dashboard-view-helpers";
@@ -54,6 +62,7 @@ export function DashboardView({
   routeKind = "preview",
 }: DashboardViewProps) {
   const locale = useLocale();
+  const tProjects = useTranslations("projects");
   const { data: session } = useSession();
   const router = useRouter();
   const summaryLocale: SummaryLocale = locale === "ko" ? "ko" : "en";
@@ -74,11 +83,12 @@ export function DashboardView({
   const isKo = summaryLocale === "ko";
   const isAuthenticated = initialAuthenticated || Boolean(session?.user);
   const userName = session?.user?.name ?? initialUserName;
-  const previewPath = "/dashboard/preview";
-  const sitesPath = "/dashboard/sites";
-  const unlockCurrentDashboardPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
-  const unlockRecommendationsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/dashboard`);
-  const unlockProjectsPath = buildSignInPath(summaryLocale, `/${summaryLocale}/projects`);
+  const previewPath = appRouteSegments.dashboardPreview;
+  const sitesPath = appRouteSegments.dashboardSites;
+  const unlockCurrentDashboardPath = buildSignInPath(summaryLocale, getDashboardPreviewPath(summaryLocale));
+  const unlockRecommendationsPath = buildSignInPath(summaryLocale, getDashboardPreviewPath(summaryLocale));
+  const unlockProjectsPath = buildSignInPath(summaryLocale, getProjectsPath(summaryLocale));
+  const projectsLoadErrorFallback = tProjects("loadError");
   const selectedProject = useMemo(
     () => projectOptions.find((project) => project.id === selectedProjectId) ?? null,
     [projectOptions, selectedProjectId],
@@ -92,43 +102,25 @@ export function DashboardView({
       categoryKeys.map((category, index) => {
         const ours = result.scores[category];
         return {
-          category:
-            {
-              performance: isKo ? "성능" : "Performance",
-              seo: "SEO",
-              aeogeo: "AEO/GEO",
-              security: isKo ? "보안" : "Security",
-              accessibility: isKo ? "접근성" : "Accessibility",
-              contentQuality: isKo ? "콘텐츠 품질" : "Content Quality",
-              technicalHealth: isKo ? "기술 상태" : "Technical Health",
-            }[category],
+          category: getCategoryLabel(category, summaryLocale),
           ours,
           benchmark: clamp(ours + [6, 8, 7, 9, 4, 5, 6][index], 40, 100),
         };
       }),
-    [isKo, result],
+    [result, summaryLocale],
   );
 
   const competitorData = useMemo(
     () =>
-      buildCompetitorGapInsights(result.scores, result.recommendations)
-        .slice(0, 7)
-        .map((item) => ({
-          category:
-            {
-              performance: isKo ? "성능" : "Performance",
-              seo: "SEO",
-              aeogeo: "AEO/GEO",
-              security: isKo ? "보안" : "Security",
-              accessibility: isKo ? "접근성" : "Accessibility",
-              contentQuality: isKo ? "콘텐츠 품질" : "Content Quality",
-              technicalHealth: isKo ? "기술 상태" : "Technical Health",
-            }[item.category],
-          ours: item.ours,
-          competitorAverage: item.competitor,
-          competitorLeader: clamp(item.competitor + 5, 50, 100),
-        })),
-    [isKo, result],
+        buildCompetitorGapInsights(result.scores, result.recommendations)
+          .slice(0, 7)
+          .map((item) => ({
+            category: getCategoryLabel(item.category, summaryLocale),
+            ours: item.ours,
+            competitorAverage: item.competitor,
+            competitorLeader: clamp(item.competitor + 5, 50, 100),
+          })),
+    [result, summaryLocale],
   );
 
   const trendData = useMemo(
@@ -188,48 +180,48 @@ export function DashboardView({
     () => [
       {
         key: "seo",
-        label: "SEO",
+        label: getCategoryLabel("seo", summaryLocale),
         score: result.scores.seo,
         icon: Search,
       },
       {
         key: "aeogeo",
-        label: "AEO/GEO",
+        label: getCategoryLabel("aeogeo", summaryLocale),
         score: result.scores.aeogeo,
         icon: Sparkles,
       },
       {
         key: "performance",
-        label: isKo ? "성능" : "Performance",
+        label: getCategoryLabel("performance", summaryLocale),
         score: result.scores.performance,
         icon: Send,
       },
       {
         key: "security",
-        label: isKo ? "보안" : "Security",
+        label: getCategoryLabel("security", summaryLocale),
         score: result.scores.security,
         icon: ShieldAlert,
       },
       {
         key: "accessibility",
-        label: isKo ? "접근성" : "Accessibility",
+        label: getCategoryLabel("accessibility", summaryLocale),
         score: result.scores.accessibility,
         icon: Accessibility,
       },
       {
         key: "contentQuality",
-        label: isKo ? "콘텐츠 품질" : "Content Quality",
+        label: getCategoryLabel("contentQuality", summaryLocale),
         score: result.scores.contentQuality,
         icon: FileText,
       },
       {
         key: "technicalHealth",
-        label: isKo ? "기술 상태" : "Technical Health",
+        label: getCategoryLabel("technicalHealth", summaryLocale),
         score: result.scores.technicalHealth,
         icon: Wrench,
       },
     ],
-    [isKo, result],
+    [result, summaryLocale],
   );
 
   const desktopVitals = useMemo(
@@ -353,7 +345,7 @@ export function DashboardView({
 
       if (!response.ok || !payload?.projects) {
         if (!cancelled) {
-          setProjectLoadError(payload?.errorMessage ?? "Projects could not be loaded.");
+          setProjectLoadError(payload?.errorMessage ?? projectsLoadErrorFallback);
         }
         return;
       }
@@ -362,14 +354,7 @@ export function DashboardView({
         return;
       }
 
-      const nextProjects: DashboardProjectOption[] = payload.projects.map((project) => ({
-        id: project.id,
-        name: project.name,
-        url: project.url,
-        lastAnalyzedAt: project.lastAnalyzedAt,
-        hasAnalysis: Boolean(project.runs?.length),
-        latestScores: project.latestScores,
-      }));
+      const nextProjects: DashboardProjectOption[] = toDashboardProjectOptions(payload.projects);
 
       setProjectOptions(nextProjects);
       setProjectLoadError(null);
@@ -410,7 +395,7 @@ export function DashboardView({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, previewPath, routeKind, router, selectedProjectId, sitesPath]);
+  }, [isAuthenticated, previewPath, projectsLoadErrorFallback, routeKind, router, selectedProjectId, sitesPath]);
 
   function handleProjectSelect(projectId: string) {
     if (projectId === "__sample__") {
@@ -418,7 +403,7 @@ export function DashboardView({
       return;
     }
 
-    router.push(`${sitesPath}/${projectId}`);
+    router.push(getDashboardProjectSegment(projectId));
   }
 
   function handleResult(next: AnalyzerResult, meta: DashboardAnalyzeMeta) {
@@ -499,7 +484,7 @@ export function DashboardView({
             analysisMode={analysisMode}
             onTrendWindowChange={setTrendWindow}
             unlockCurrentDashboardPath={unlockCurrentDashboardPath}
-            projectActionPath={isAuthenticated ? `/${summaryLocale}/projects` : unlockProjectsPath}
+            projectActionPath={isAuthenticated ? appRouteSegments.projects : unlockProjectsPath}
           />
           <DashboardDetailSections
             recommendations={result.recommendations}
