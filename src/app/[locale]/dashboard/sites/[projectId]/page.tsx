@@ -60,6 +60,7 @@ export default async function DashboardProjectPage({
         initialSelectedProjectId={projectContext.project.id}
         initialLastAnalyzedAt={projectContext.latestAnalyzedAt}
         initialHasHistory={projectContext.hasHistory}
+        initialTrendPoints={projectContext.scoreTrend}
         initialCompetitorBenchmark={projectContext.competitorBenchmark}
       />
     </AppShell>

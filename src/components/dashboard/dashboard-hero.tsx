@@ -175,6 +175,7 @@ export function DashboardHero({
           onResult={onResult}
           className="w-full"
           defaultUrl={selectedProjectUrl}
+          projectId={selectedProjectId}
           meta={
             <div className="flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
               {lastAnalyzedAt ? (

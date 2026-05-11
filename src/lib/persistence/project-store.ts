@@ -28,6 +28,7 @@ export type WorkspaceProject = {
     url: string;
     status: Exclude<ProjectStatus, "idle">;
     createdAt: string;
+    score?: number;
   }[];
 };
 
@@ -41,6 +42,10 @@ export type ProjectDashboardContext = {
   latestResult: AnalyzerResult | null;
   latestAnalyzedAt: string | null;
   hasHistory: boolean;
+  scoreTrend: {
+    createdAt: string;
+    score: number;
+  }[];
   competitorBenchmark: CompetitorBenchmark | null;
 };
 
@@ -174,6 +179,7 @@ export async function listProjectsForUser(userId: string): Promise<WorkspaceProj
       url: run.sourceUrl,
       status: run.status,
       createdAt: run.createdAt.toISOString(),
+      score: (run.scores as AnalysisScores | undefined)?.overall,
     })),
   }));
 }
@@ -212,9 +218,14 @@ export async function getProjectDashboardContext(
           },
         },
       },
-      _count: {
+      history: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 12,
         select: {
-          history: true,
+          createdAt: true,
+          overallScore: true,
         },
       },
       analysisResults: {
@@ -295,7 +306,11 @@ export async function getProjectDashboardContext(
     },
     latestResult: latestResultWithBenchmark,
     latestAnalyzedAt: latestAnalysis?.createdAt.toISOString() ?? null,
-    hasHistory: project._count.history > 1,
+    hasHistory: project.history.length > 1,
+    scoreTrend: project.history.slice().reverse().map((point) => ({
+      createdAt: point.createdAt.toISOString(),
+      score: point.overallScore,
+    })),
     competitorBenchmark,
   };
 }

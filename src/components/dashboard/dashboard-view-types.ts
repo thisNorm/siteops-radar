@@ -33,6 +33,11 @@ export type DashboardTrendDatum = {
   locale: SummaryLocale;
 };
 
+export type DashboardTrendPoint = {
+  createdAt: string;
+  score: number;
+};
+
 export type DashboardSeverityDatum = {
   label: string;
   value: number;
@@ -56,6 +61,7 @@ export type DashboardAnalyzeMeta = {
   persisted: boolean;
   reason?: string;
   hasHistory?: boolean;
+  trendPoints?: DashboardTrendPoint[];
 };
 
 export type DashboardProjectOption = {

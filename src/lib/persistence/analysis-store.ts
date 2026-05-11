@@ -258,10 +258,28 @@ export async function persistAnalysisRun(input: PersistInput) {
     }
   }
 
+  const scoreTrend = result && shouldTrackHistory
+    ? (
+        await prisma.analysisHistory.findMany({
+          where: { projectId: project.id },
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          select: {
+            createdAt: true,
+            overallScore: true,
+          },
+        })
+      ).reverse().map((point) => ({
+        createdAt: point.createdAt.toISOString(),
+        score: point.overallScore,
+      }))
+    : [];
+
   return {
     persisted: true,
     projectId: project.id,
     analysisResultId: created.id,
     hasHistory: Boolean(previousHistory),
+    scoreTrend,
   };
 }

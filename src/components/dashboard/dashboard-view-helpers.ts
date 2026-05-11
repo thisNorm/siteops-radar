@@ -51,16 +51,20 @@ export function buildSparklineValues(score: number, seed: number) {
   });
 }
 
-export function buildTrendSeries(score: number, locale: SummaryLocale, window: "6" | "12") {
-  const labels =
-    window === "6"
-      ? ["04.01", "04.08", "04.15", "04.22", "04.29", "05.12"]
-      : ["02.18", "03.03", "03.17", "03.31", "04.14", "05.12"];
-  const offsets = window === "6" ? [-18, -12, -7, -5, -2, 0] : [-22, -17, -12, -8, -4, 0];
+export function buildTrendDataFromHistory(
+  points: { createdAt: string; score: number }[],
+  locale: SummaryLocale,
+  window: "6" | "12",
+) {
+  const formatter = new Intl.DateTimeFormat(locale === "ko" ? "ko-KR" : "en-US", {
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const limit = window === "6" ? 6 : 12;
 
-  return labels.map((label, index) => ({
-    label,
-    score: clamp(score + offsets[index], 28, 100),
+  return points.slice(-limit).map((point) => ({
+    label: formatter.format(new Date(point.createdAt)),
+    score: point.score,
     locale,
   }));
 }
