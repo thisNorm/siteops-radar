@@ -51,9 +51,9 @@
     "analysisError": "The analysis run failed."
   },
   "auth": {
-    "eyebrow": "Private workspace",
+    "eyebrow": "Open workspace",
     "title": "Sign in to SiteOps Radar",
-    "subtitle": "Use Google sign-in to lock the workspace for personal use and manage projects and analysis history under your account.",
+    "subtitle": "Sign-in is optional. Use the public workspace immediately or switch to a personal account when needed.",
     "signIn": "Sign in",
     "continueWithGoogle": "Continue with Google",
     "continueLocally": "Continue in local mode",
@@ -61,8 +61,8 @@
     "localModeDescription": "In development, you can use the local test account to move quickly without Google OAuth.",
     "localModeEmail": "Development login email",
     "signOut": "Sign out",
-    "freeModeTitle": "Preview mode",
-    "freeModeDescription": "Try the public audit without signing in, then unlock saved projects and the full report after login.",
+    "freeModeTitle": "Open mode",
+    "freeModeDescription": "Use analyses, projects, and reports in the public workspace without signing in.",
     "googleNotConfigured": "Google OAuth is not connected yet. Add the client ID and secret to enable this button.",
     "googleAllowlistRequired": "If needed, use AUTHORIZED_EMAILS to restrict which Google accounts can sign in.",
     "googleTemporarilyUnavailable": "Google sign-in is temporarily unavailable. Check the environment configuration.",
@@ -85,7 +85,7 @@
     "aiSummary": "AI summary",
     "keyRisks": "Key risks",
     "nextActions": "Next actions",
-    "previewNotice": "This is a preview analysis. Sign in to save results and unlock the full report.",
+    "previewNotice": "This is a public analysis. Add the site to a project to save history and reports in the open workspace.",
     "history": "Recent analysis",
     "partialReady": "Partial failure ready",
     "checkingSavedSites": "Checking your saved sites before opening the dashboard.",
@@ -124,10 +124,10 @@
     "adminBadge": "Admin",
     "workspace": {
       "title": "Workspace state",
-      "previewBadge": "Preview",
+      "previewBadge": "Open",
       "memberBadge": "Member workspace",
       "adminBadge": "Admin workspace",
-      "previewDescription": "Try the public preview first, then sign in to unlock saved sites, reports, and workspace controls.",
+      "previewDescription": "Use saved sites, reports, and workspace controls in open mode without signing in.",
       "memberDescription": "Saved sites, report surfaces, and workspace controls are active for this signed-in account.",
       "adminDescription": "This account can use the full workspace plus admin controls for authentication and environment health."
     }

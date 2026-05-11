@@ -23,16 +23,11 @@ export default async function DashboardProjectPage({
   const { locale, projectId } = await params;
   const overview = await getWorkspaceOverview();
 
-  if (!overview.identity) {
+  if (!overview.dbConfigured) {
     redirect(getDashboardPreviewPath(locale) as never);
   }
 
   const user = await requireCurrentUser();
-
-  if (!user) {
-    redirect(getDashboardPreviewPath(locale) as never);
-  }
-
   const projectContext = await getProjectDashboardContext(user.id, projectId);
 
   if (!projectContext) {

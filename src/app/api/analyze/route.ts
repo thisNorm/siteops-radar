@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentSessionIdentity, requireCurrentUser } from "@/lib/auth/session";
+import { getWorkspaceIdentity, requireCurrentUser } from "@/lib/auth/session";
 import { runSinglePageAnalysis } from "@/lib/analyzers/run-analysis";
 import { sampleAnalysis } from "@/lib/analyzers/mock";
 import { persistAnalysisRun } from "@/lib/persistence/analysis-store";
@@ -13,7 +13,7 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentSessionIdentity();
+  const currentUser = await getWorkspaceIdentity();
 
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
-  const workspaceUser = currentUser && data.projectId ? await requireCurrentUser() : null;
+  const workspaceUser = data.projectId ? await requireCurrentUser() : null;
 
   async function persistManagedRun(input: {
     url?: string;
@@ -41,13 +41,6 @@ export async function POST(request: Request) {
     errorMessage?: string;
     trackHistory?: boolean;
   }) {
-    if (!currentUser) {
-      return {
-        persisted: false,
-        reason: "AUTH_REQUIRED_FOR_PERSISTENCE",
-      };
-    }
-
     if (!data.projectId) {
       return {
         persisted: false,

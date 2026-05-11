@@ -47,8 +47,8 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           </h1>
           <p className="text-base leading-7 text-muted-foreground md:text-lg">
             {isKo
-              ? "현재 로그인 상태, 프로젝트 저장 방식, 분석 누적 규칙을 설정 페이지에서 바로 읽을 수 있게 정리했습니다."
-              : "This settings view now summarizes sign-in state, workspace storage behavior, and how analysis history accumulates."}
+              ? "공개 워크스페이스 상태, 프로젝트 저장 방식, 분석 누적 규칙을 설정 페이지에서 바로 읽을 수 있게 정리했습니다."
+              : "This settings view now summarizes open workspace state, storage behavior, and how analysis history accumulates."}
           </p>
         </section>
 
@@ -85,17 +85,17 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
                         ? "현재 계정은 관리자 권한을 가지고 있어 admin 영역까지 접근할 수 있습니다."
                         : "This account has admin access and can enter the admin area."
                       : isKo
-                        ? "현재 계정은 일반 사용자 권한으로 프로젝트와 대시보드를 사용할 수 있습니다."
-                        : "This account has member access for the dashboard and project workspace."
+                        ? "프로젝트와 대시보드는 공개 워크스페이스 권한으로 바로 사용할 수 있습니다."
+                        : "The dashboard and project workspace are available through open workspace access."
                   }
                 />
                 <WorkspaceInfoCard
                   icon={Lock}
-                  title={isKo ? "로그인 보호" : "Sign-in protection"}
+                  title={isKo ? "오픈 접근" : "Open access"}
                   description={
                     isKo
-                      ? "프로젝트, 리포트, 설정은 로그인 후에만 열리고 공개 대시보드는 체험용으로만 유지됩니다."
-                      : "Projects, reports, and settings stay behind sign-in while the public dashboard remains preview-only."
+                      ? "프로젝트, 리포트, 설정, 분석 상세는 로그인 없이 공개 워크스페이스에서 열립니다."
+                      : "Projects, reports, settings, and analysis details are open in the public workspace without sign-in."
                   }
                 />
               </div>
@@ -154,8 +154,8 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               {isKo
-                ? "로그인 정보는 확인되었지만 저장소 응답이 불안정해 일부 지표는 비어 있을 수 있습니다."
-                : "Sign-in state is available, but storage did not respond fully so some workspace metrics may be empty."}
+                ? "워크스페이스 정보는 확인되었지만 저장소 응답이 불안정해 일부 지표는 비어 있을 수 있습니다."
+                : "Workspace identity is available, but storage did not respond fully so some metrics may be empty."}
             </CardContent>
           </Card>
         ) : null}

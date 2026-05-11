@@ -38,4 +38,4 @@
 - [ ] Add score trend line chart from history
 - [ ] Add Vercel Cron scheduled analysis
 - [ ] Add report export flow
-- [ ] Add auth, workspace, and billing-ready boundaries
+- [x] Keep workspace access open for all users

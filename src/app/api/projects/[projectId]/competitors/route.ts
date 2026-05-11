@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { addCompetitorForProject } from "@/lib/persistence/project-store";
+import { hasDatabaseUrl } from "@/lib/persistence/database";
 
 const competitorSchema = z.object({
   name: z.string().trim().max(120).default(""),
@@ -12,6 +13,16 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> },
 ) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(
+      {
+        errorCode: "DATABASE_NOT_CONFIGURED",
+        errorMessage: "Workspace storage is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireCurrentUser();
 
   if (!user) {

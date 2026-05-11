@@ -1,6 +1,9 @@
 import { auth } from "@/auth";
 import { isAdminEmail } from "./access";
 
+const PUBLIC_WORKSPACE_EMAIL = "public@siteopsradar.local";
+const PUBLIC_WORKSPACE_NAME = "Public workspace";
+
 export async function getCurrentSessionIdentity() {
   const session = await auth();
   const sessionUser = session?.user;
@@ -18,13 +21,23 @@ export async function getCurrentSessionIdentity() {
   };
 }
 
-export async function requireCurrentUser() {
+export async function getWorkspaceIdentity() {
   const identity = await getCurrentSessionIdentity();
 
-  if (!identity) {
-    return null;
+  if (identity) {
+    return identity;
   }
 
+  return {
+    email: PUBLIC_WORKSPACE_EMAIL,
+    name: PUBLIC_WORKSPACE_NAME,
+    image: null,
+    isAdmin: false,
+  };
+}
+
+export async function requireCurrentUser() {
+  const identity = await getWorkspaceIdentity();
   const userProfile = {
     email: identity.email,
     name: identity.name,
