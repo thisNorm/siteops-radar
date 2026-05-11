@@ -2,9 +2,11 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
+  Download,
   FileText,
   FolderKanban,
   LineChart,
+  Share2,
   Sparkles,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -185,11 +187,19 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
                         {isKo ? "최근 저장" : "Last saved"}: {formatDate(project.lastAnalyzedAt, locale)}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <div className="rounded-lg bg-primary/5 px-3 py-2 text-right">
                         <div className="text-xs text-muted-foreground">{isKo ? "전체 점수" : "Overall"}</div>
                         <div className="text-xl font-semibold">{project.latestScores?.overall ?? "—"}</div>
                       </div>
+                      <Link href={`/reports/snapshots/${project.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                        {isKo ? "공유" : "Share"}
+                        <Share2 className="h-4 w-4" />
+                      </Link>
+                      <a href={`/api/reports/${project.id}/export`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                        {isKo ? "내보내기" : "Export"}
+                        <Download className="h-4 w-4" />
+                      </a>
                       <Link href={getDashboardProjectPath(locale, project.id)} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                         {isKo ? "대시보드" : "Dashboard"}
                         <ArrowRight className="h-4 w-4" />

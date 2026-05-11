@@ -37,5 +37,5 @@
 - [ ] Add priority matrix visualization
 - [ ] Add score trend line chart from history
 - [x] Add Vercel Cron scheduled analysis
-- [ ] Add report export flow
+- [x] Add report export flow
 - [x] Keep workspace access open for all users

@@ -184,17 +184,14 @@ export async function listProjectsForUser(userId: string): Promise<WorkspaceProj
   }));
 }
 
-export async function getProjectDashboardContext(
-  userId: string,
+async function readProjectDashboardContext(
   projectId: string,
+  userId?: string,
 ): Promise<ProjectDashboardContext | null> {
   ensureDatabaseUrl();
   const { prisma } = await import("@/lib/db");
   const project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      userId,
-    },
+    where: userId ? { id: projectId, userId } : { id: projectId },
     select: {
       id: true,
       name: true,
@@ -313,6 +310,19 @@ export async function getProjectDashboardContext(
     })),
     competitorBenchmark,
   };
+}
+
+export async function getProjectDashboardContext(
+  userId: string,
+  projectId: string,
+): Promise<ProjectDashboardContext | null> {
+  return readProjectDashboardContext(projectId, userId);
+}
+
+export async function getPublicProjectDashboardContext(
+  projectId: string,
+): Promise<ProjectDashboardContext | null> {
+  return readProjectDashboardContext(projectId);
 }
 
 export async function createProjectForUser(userId: string, input: { name: string; url: string }) {
