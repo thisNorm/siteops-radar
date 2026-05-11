@@ -8,6 +8,7 @@
     "dashboard": "Dashboard",
     "admin": "Admin",
     "projects": "Projects",
+    "alerts": "Alerts",
     "competitors": "Competitors",
     "reports": "Reports",
     "settings": "Settings"
@@ -109,5 +110,18 @@
     "label": "Language",
     "ko": "한국어",
     "en": "English"
+  },
+  "shell": {
+    "userFallback": "SiteOps user",
+    "adminBadge": "Admin",
+    "workspace": {
+      "title": "Workspace state",
+      "previewBadge": "Preview",
+      "memberBadge": "Member workspace",
+      "adminBadge": "Admin workspace",
+      "previewDescription": "Try the public preview first, then sign in to unlock saved sites, reports, and workspace controls.",
+      "memberDescription": "Saved sites, report surfaces, and workspace controls are active for this signed-in account.",
+      "adminDescription": "This account can use the full workspace plus admin controls for authentication and environment health."
+    }
   }
 }

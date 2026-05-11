@@ -15,6 +15,18 @@ export function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+export function getCategoryLabel(category: AnalysisCategory, locale: SummaryLocale) {
+  return {
+    performance: locale === "ko" ? "성능" : "Performance",
+    seo: "SEO",
+    aeogeo: "AEO/GEO",
+    security: locale === "ko" ? "보안" : "Security",
+    accessibility: locale === "ko" ? "접근성" : "Accessibility",
+    contentQuality: locale === "ko" ? "콘텐츠 품질" : "Content Quality",
+    technicalHealth: locale === "ko" ? "기술 상태" : "Technical Health",
+  }[category];
+}
+
 export function safeHostname(url: string) {
   try {
     return new URL(url).hostname;
