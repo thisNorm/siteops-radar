@@ -12,6 +12,7 @@ describe("HTML analyzer", () => {
         <head>
           <title>Acme</title>
           <meta name="description" content="Acme website" />
+          <meta property="og:image" content="/og-card.png" />
           <link rel="canonical" href="https://example.com" />
           <link rel="stylesheet" href="/app.css" />
           <script src="https://cdn.example.com/tag.js"></script>
@@ -44,6 +45,7 @@ describe("HTML analyzer", () => {
 
     expect(snapshot.structuredDataTypes).toEqual(["Organization"]);
     expect(snapshot.imageSummary).toEqual({ total: 2, missingAlt: 1 });
+    expect(snapshot.thumbnailImageUrl).toBe("https://example.com/og-card.png");
     expect(snapshot.assetSummary.externalScripts).toBe(1);
     expect(extractAssetUrls(html, "https://example.com")).toEqual([
       "https://cdn.example.com/tag.js",

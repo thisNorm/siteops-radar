@@ -1,12 +1,93 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ExternalLink, FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { getScoreTone, panelClassName, safeHostname } from "@/components/dashboard/dashboard-view-helpers";
 import type { DashboardProjectOption } from "./dashboard-view-types";
 
 function buildFaviconUrl(url: string) {
   return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(url)}`;
+}
+
+function ProjectCardMedia({
+  imageUrl,
+  faviconUrl,
+  hostname,
+}: {
+  imageUrl?: string;
+  faviconUrl: string;
+  hostname: string;
+}) {
+  const [hasThumbnail, setHasThumbnail] = useState(false);
+
+  useEffect(() => {
+    if (!imageUrl) {
+      setHasThumbnail(false);
+      return;
+    }
+
+    let cancelled = false;
+    const image = new window.Image();
+
+    image.onload = () => {
+      if (!cancelled) {
+        setHasThumbnail(true);
+      }
+    };
+
+    image.onerror = () => {
+      if (!cancelled) {
+        setHasThumbnail(false);
+      }
+    };
+
+    image.src = imageUrl;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
+
+  return (
+    <>
+      {hasThumbnail && imageUrl ? (
+        <div
+          className="absolute inset-0 bg-cover bg-top"
+          style={{
+            backgroundImage: `url("${imageUrl}")`,
+          }}
+        />
+      ) : null}
+      <div
+        className={cn(
+          "absolute inset-0",
+          hasThumbnail
+            ? "bg-linear-to-br from-slate-950/10 via-white/40 to-slate-950/10 dark:from-slate-950/45 dark:via-slate-950/30 dark:to-slate-950/60"
+            : "bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
+        )}
+      />
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div
+          className={cn(
+            "h-14 w-14 rounded-2xl border border-white/80 bg-white/90 shadow-sm dark:border-white/10 dark:bg-white/10",
+            hasThumbnail ? "bg-cover bg-center" : "",
+          )}
+          style={{
+            backgroundImage: hasThumbnail && imageUrl ? `url("${imageUrl}")` : `url(${faviconUrl})`,
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: hasThumbnail ? "cover" : "30px 30px",
+          }}
+        />
+        <Badge variant="outline" className="gap-1 rounded-md bg-background/80">
+          <ExternalLink className="h-3 w-3" />
+          {hostname}
+        </Badge>
+      </div>
+    </>
+  );
 }
 
 export function DashboardProjectGrid({
@@ -46,24 +127,14 @@ export function DashboardProjectGrid({
               onClick={() => onSelect(project.id)}
               className={`${panelClassName("text-left transition-transform hover:-translate-y-0.5")} overflow-hidden`}
             >
-              <div className="relative aspect-[16/9] border-b border-border/60 bg-linear-to-br from-slate-100 via-white to-slate-50 px-5 py-5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
+              <div className="relative aspect-[16/9] border-b border-border/60 px-5 py-5">
                 <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-500 via-sky-500 to-emerald-500" />
                 <div className="flex h-full flex-col justify-between">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className="h-14 w-14 rounded-2xl border border-white/80 bg-white/90 shadow-sm dark:border-white/10 dark:bg-white/10"
-                      style={{
-                        backgroundImage: `url(${faviconUrl})`,
-                        backgroundPosition: "center",
-                        backgroundRepeat: "no-repeat",
-                        backgroundSize: "30px 30px",
-                      }}
-                    />
-                    <Badge variant="outline" className="gap-1 rounded-md bg-background/80">
-                      <ExternalLink className="h-3 w-3" />
-                      {hostname}
-                    </Badge>
-                  </div>
+                  <ProjectCardMedia
+                    imageUrl={project.thumbnailUrl}
+                    faviconUrl={faviconUrl}
+                    hostname={hostname}
+                  />
                   <div className="text-sm text-muted-foreground">
                     {project.hasAnalysis
                       ? isKo

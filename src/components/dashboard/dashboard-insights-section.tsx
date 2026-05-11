@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { panelClassName } from "./dashboard-view-helpers";
 import type {
   DashboardAnalysisMode,
+  DashboardCompetitorBenchmark,
   DashboardCompetitorDatum,
   DashboardLocalizedSummary,
   DashboardRadarDatum,
@@ -21,6 +22,9 @@ export function DashboardInsightsSection({
   isKo,
   radarData,
   competitorData,
+  competitorBenchmark,
+  hasLinkedCompetitors,
+  selectedProjectName,
   localizedSummary,
   trendData,
   trendWindow,
@@ -34,6 +38,9 @@ export function DashboardInsightsSection({
   isKo: boolean;
   radarData: DashboardRadarDatum[];
   competitorData: DashboardCompetitorDatum[];
+  competitorBenchmark?: DashboardCompetitorBenchmark | null;
+  hasLinkedCompetitors: boolean | null;
+  selectedProjectName?: string | null;
   localizedSummary: DashboardLocalizedSummary;
   trendData: DashboardTrendDatum[];
   trendWindow: "6" | "12";
@@ -43,6 +50,7 @@ export function DashboardInsightsSection({
   unlockCurrentDashboardPath: string;
   projectActionPath: string;
 }) {
+  const hasCompetitorBenchmark = Boolean(competitorBenchmark?.analyzedCompetitorCount);
   const trendPlaceholderTitle =
     analysisMode === "sample"
       ? isKo
@@ -87,37 +95,111 @@ export function DashboardInsightsSection({
             data={radarData}
             oursLabel={isKo ? "내 사이트" : "Our site"}
             benchmarkLabel={isKo ? "경쟁사 평균" : "Competitor avg"}
+            showBenchmark={hasCompetitorBenchmark}
           />
         </CardContent>
       </Card>
 
-      <LockedPreview
-        locked={!isAuthenticated}
-        signInPath={unlockCurrentDashboardPath}
-        title={isKo ? "로그인해서 경쟁사 격차 보기" : "Sign in to unlock competitor gaps"}
-        description={
-          isKo
-            ? "경쟁사 비교, 상세 격차 내러티브, 확장 트렌드 리포트는 로그인 후 사용할 수 있습니다."
-            : "Competitor comparisons, narrative gap analysis, and extended trend reporting unlock after sign-in."
-        }
-      >
+      {hasLinkedCompetitors === false ? (
         <Card className={panelClassName()}>
           <CardHeader>
-            <CardTitle className="text-base">{isKo ? "경쟁사 격차" : "Competitor gap"}</CardTitle>
+            <CardTitle className="text-base">
+              {isKo ? "경쟁 사이트가 아직 연결되지 않았습니다" : "No competitors linked yet"}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <CompetitorBars
-              data={competitorData}
-              oursLabel={isKo ? "내 사이트" : "Our site"}
-              competitorAverageLabel={isKo ? "경쟁사 평균" : "Competitor avg"}
-              competitorLeaderLabel={isKo ? "경쟁사 상위" : "Category leader"}
-            />
-            <p className="text-sm leading-7 text-muted-foreground">
-              {localizedSummary.competitorGapNarrative}
-            </p>
+          <CardContent className="flex min-h-[260px] flex-col items-center justify-center gap-4 text-center">
+            <div className="space-y-2">
+              <p className="text-base font-semibold">
+                {isKo
+                  ? `${selectedProjectName ?? "이 사이트"}에 경쟁 사이트를 먼저 연결해주세요`
+                  : `Link competitors to ${selectedProjectName ?? "this site"} first`}
+              </p>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                {isKo
+                  ? "프로젝트 관리에서 현재 사이트에 경쟁 사이트를 추가하면 그때부터 경쟁사 평균과 격차 차트가 표시됩니다."
+                  : "Add competitors for the current site in project management and the competitor averages and gap chart will appear here."}
+              </p>
+            </div>
+            <a href={projectActionPath}>
+              <Button variant="outline" className="rounded-lg">
+                {isKo ? "프로젝트 관리로 이동" : "Go to project management"}
+              </Button>
+            </a>
           </CardContent>
         </Card>
-      </LockedPreview>
+      ) : !hasCompetitorBenchmark ? (
+        <Card className={panelClassName()}>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {hasLinkedCompetitors
+                ? isKo
+                  ? "연결된 경쟁사 분석이 아직 없습니다"
+                  : "Linked competitors are waiting for analysis"
+                : isKo
+                  ? "경쟁사 벤치마크는 저장된 사이트에서 시작됩니다"
+                  : "Competitor benchmarks start from saved sites"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex min-h-[260px] flex-col items-center justify-center gap-4 text-center">
+            <div className="space-y-2">
+              <p className="text-base font-semibold">
+                {hasLinkedCompetitors
+                  ? isKo
+                    ? `${selectedProjectName ?? "이 사이트"}를 다시 분석하면 연결된 경쟁사도 함께 측정됩니다`
+                    : `Run ${selectedProjectName ?? "this site"} again to analyze its linked competitors too`
+                  : isKo
+                    ? "저장된 사이트에 경쟁사를 연결해야 실제 평균과 상위 비교가 표시됩니다"
+                    : "Link competitors to a saved site to unlock live average and leader comparisons"}
+              </p>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                {hasLinkedCompetitors
+                  ? isKo
+                    ? "프로젝트 관리에서 내 사이트 분석을 실행하면 현재 연결된 경쟁사들의 최신 분석 결과를 바탕으로 평균과 상위 기준을 계산합니다."
+                    : "When you run the site analysis from project management, the dashboard will calculate competitor averages and leaders from the latest linked competitor analyses."
+                  : isKo
+                    ? "단순 검색이나 예시 화면에서는 경쟁사 추정치를 만들지 않습니다. 저장된 사이트와 연결된 경쟁사들의 실제 분석 결과만 사용합니다."
+                    : "Ad hoc checks and sample previews do not fabricate competitor estimates. The dashboard only uses live analyses from linked competitors on saved sites."}
+              </p>
+            </div>
+            <a href={projectActionPath}>
+              <Button variant="outline" className="rounded-lg">
+                {isKo ? "프로젝트 관리로 이동" : "Go to project management"}
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+      ) : (
+        <LockedPreview
+          locked={!isAuthenticated}
+          signInPath={unlockCurrentDashboardPath}
+          title={isKo ? "로그인해서 경쟁사 격차 보기" : "Sign in to unlock competitor gaps"}
+          description={
+            isKo
+              ? "경쟁사 비교, 상세 격차 내러티브, 확장 트렌드 리포트는 로그인 후 사용할 수 있습니다."
+              : "Competitor comparisons, narrative gap analysis, and extended trend reporting unlock after sign-in."
+          }
+        >
+          <Card className={panelClassName()}>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {isKo ? "경쟁사 벤치마크" : "Competitor benchmark"} ·{" "}
+                {competitorBenchmark?.analyzedCompetitorCount ?? 0}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CompetitorBars
+                data={competitorData}
+                oursLabel={isKo ? "내 사이트" : "Our site"}
+                competitorAverageLabel={isKo ? "경쟁사 평균" : "Competitor avg"}
+                competitorLeaderLabel={isKo ? "경쟁사 상위" : "Category leader"}
+              />
+              <p className="text-sm leading-7 text-muted-foreground">
+                {localizedSummary.competitorGapNarrative}
+              </p>
+            </CardContent>
+          </Card>
+        </LockedPreview>
+      )}
 
       {hasHistory ? (
         <LockedPreview
